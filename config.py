@@ -1,0 +1,1 @@
+SYSROOT_PATH = "/var/sysroot/"
