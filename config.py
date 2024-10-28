@@ -1,1 +1,1 @@
-SYSROOT_PATH = "/var/sysroot/"
+SYSROOT_PATH = "/tmp/test/"

@@ -11,12 +11,10 @@ def main(argv):
     parser.add_argument("-app" , "--application" , type=str , required=True , help="name of binary debugging process is belong.")
     parser.add_argument("-arch" , "--architecture" , type=str , required=False , help="architecture set for cross-compiled binary, powerpc:common is the default architecture.")
     args = parser.parse_args()
-    #installation()
+    installation()
     port = run_gdbserver(user=args.username , pwd=args.password , ip= args.ip)
-     
-    #run_gdb_local(app=args.application, port = port , pid=args.process_id , user=args.username , pwd=args.password, ip= args.ip , arch = args.architecture )
+    run_gdb_local(app=args.application, port = port , pid=args.process_id , rel=args.release, user=args.username , pwd=args.password, ip= args.ip , arch = args.architecture )
 
- 
 if __name__ == "__main__":
     import sys
     main(sys.argv[1:])

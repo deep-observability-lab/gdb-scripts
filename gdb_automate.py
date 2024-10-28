@@ -1,18 +1,21 @@
+#!/usr/bin/python3.8
 import os
 import subprocess
 from ssh_utils import SSHConnection
 from config import SYSROOT_PATH
 
     
-def check_port(ssh_conn ):
+def check_port(ssh_conn, password ):
     ports_list = [ 4554 , 5566 , 1343 ] 
     ssh_conn.connect()
-    gdbserver_command = f"netstat -tunlp | grep gdbserver | awk '{{print $4}}' | cut -d ':' -f2"
+    gdbserver_command = f"echo {password} | sudo -S netstat -tunlp | grep gdbserver | awk '{{print $4}}' | cut -d ':' -f2"
+    gdbserver_command = f"sudo -S netstat -tunlp | grep gdbserver | awk '{{print $4}}' | cut -d ':' -f2"
     output, _ = ssh_conn.run_command(gdbserver_command)
     output = output.strip()
     ports = output.splitlines()
+    print("output look here  " , ports , "type " , type(ports) ) 
     for p in ports_list :
-        if not (str(p) in ports) :
+        if not ((str(p) in ports) or (p in ports) ) :
             print("port : " , p )
             return p
     return 0
@@ -37,16 +40,17 @@ def is_stripped(binary_path):
         exit()
 
 
-def extract_shared_libs(ip, username, password , pid , rel):
+def extract_shared_libs(ip, username, password , pid):
     """
         get the sharedlibrary names, which runnig process using them. in some cases gdb only looking for the symlinks, 
         so , creating the symlink at the path gdb would expect them to be, helps to correctly debug the process. 
     """
     libs_path = ''
     try:
-        ssh_conn = SSHConnection(host=ip, username=username, password=password)
+        ssh_conn = SSHConnection(ip, username=username, password=password)
         ssh_conn.connect()
         command = f"cat /proc/{pid}/maps | grep '\\.so' | awk -F'/' '{{print $NF}}' | sort -u"
+        command = f"echo {password} | sudo -S cat /proc/{pid}/maps | grep '\\.so' | awk -F'/' '{{print $NF}}' | sort -u"
         stdout , _ = ssh_conn.run_command(command=command)
         result = stdout.strip()
         non_stripped = {}
@@ -83,8 +87,9 @@ def extract_shared_libs(ip, username, password , pid , rel):
             if real_lib in non_stripped.keys(): 
                 tmp = non_stripped[real_lib ]         
                 libs_path.replace( tmp+':' , '' )
-                ll = SYSROOT_PATH + f'{rel}' + link 
-                os.symlink( tmp  , ll )
+                ll = SYSROOT_PATH  + link 
+                if not os.path.exists(ll ) : 
+                    os.symlink( tmp  , ll )
     except Exception as e:
         print(f"Error: {e}")
         exit()
@@ -93,29 +98,29 @@ def extract_shared_libs(ip, username, password , pid , rel):
         return libs_path.strip().replace('\n' , ':')
 
 
-def run_gdb_local(app, ip, port, pid, user, pwd, rel, arch="powerpc:common"):
+def run_gdb_local(app, ip, port, pid, user, pwd, arch="powerpc:common"):
     import tempfile
-    binary_path = SYSROOT_PATH+f'{rel}/'  + f"app/{app}"
+    binary_path = SYSROOT_PATH + f"{app}"
 
-    SUBLIBS = extract_shared_libs(ip, user, pwd , pid,rel )    
+    SUBLIBS = extract_shared_libs(ip, user, pwd , pid )    
     tmp_file_path = ''
    # print("subdirs ***** : " ,  SUBLIBS ) 
     curr_dir = os.getcwd() 
     gdb_commands = f"""
 set sysroot {SYSROOT_PATH} 
 dir {SYSROOT_PATH}
-set solib-search-path {SUBLIBS}
+#set solib-search-path {SUBLIBS}
 set architecture {arch}
 set environment IP_ADDRESS={ip}
 set environment USERNAME={user}
 set environment PASSWORD={pwd}
-python
-import sys
-sys.path.append(f"{curr_dir}/gdb_commands/")
-sys.path.insert(0, '../env/lib/python3.8/site-packages/')
-import end_command 
-end
-source __init__.py
+#python
+#import sys
+#sys.path.append(f"{curr_dir}/gdb_commands/")
+#sys.path.insert(0, '../env/lib/python3.8/site-packages/')
+#import end_command 
+#end
+#source __init__.py
 target extended-remote {ip}:{port}
 attach {pid}
 list
@@ -135,15 +140,17 @@ list
     
 
 def run_gdbserver(user, ip, pwd, port=1234):
-    ssh_conn = SSHConnection(host=ip, username=user, password=pwd)
-    port = check_port( ssh_conn )  
+    ssh_conn = SSHConnection(ip=ip, username=user, password=pwd)
+    port = check_port( ssh_conn , pwd  )  
+    print( " port list "  , port ) 
     if port == 0 : 
         print( " all ports for gdbserver are busy " ) 
         exit() 
     try:
         ssh_conn.connect()
-        gdbserver_command = f"gdbserver --multi :{port}"
+        gdbserver_command = f"echo {pwd} | sudo gdbserver --multi :{port} > /dev/null 2>&1 &"
         ssh_conn.run_command(gdbserver_command)
+        print("hello oooo " ) 
     finally:
         ssh_conn.close()
     return port

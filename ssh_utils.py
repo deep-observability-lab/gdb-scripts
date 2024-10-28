@@ -17,6 +17,7 @@ class SSHConnection:
             if self.private_key:
                 key = paramiko.RSAKey.from_private_key_file(self.private_key)
                 self.client.connect(self.ip, username=self.username, pkey=key, port=self.port)
+
             else:
                 # If using password
                 self.client.connect(self.ip, username=self.username, password=self.password, port=self.port)
@@ -27,17 +28,23 @@ class SSHConnection:
 
     def run_command(self, command):
         """Run a command on the remote machine via SSH."""
+        print( "start 1 " ) 
         if not self.client:
             raise Exception("No SSH connection established.")
         try:
+            print( "command run " , command ) 
             stdin, stdout, stderr = self.client.exec_command(command)
-            output = stdout.read().decode()
+            stdin.write(f"{self.password}\n")
+            stdin.flush()
             error = stderr.read().decode()
+            output = stdout.read().decode()
             if error:
-                print(f"Error running command: {error}")
-            return output, error
+                print(f"Error running command: {error} command : {command}")
+            return error , output
         except Exception as e:
             print(f"Failed to run command '{command}': {e}")
+            if error : 
+                print(f"Error running command :{error}")
             raise e
 
     def transfer_file(self, local_path, remote_path):
