@@ -17,36 +17,38 @@ class SSHConnection:
             if self.private_key:
                 key = paramiko.RSAKey.from_private_key_file(self.private_key)
                 self.client.connect(self.ip, username=self.username, pkey=key, port=self.port)
-
             else:
                 # If using password
                 self.client.connect(self.ip, username=self.username, password=self.password, port=self.port)
-            print(f"Connected to {self.ip}")
+            print("Connected to {}".format(self.ip))
         except Exception as e:
-            print(f"Failed to connect to {self.ip}: {e}")
+            print("Failed to connect to {}: {}".format(self.ip , e ))
             raise e
 
     def run_command(self, command):
+        import time
         """Run a command on the remote machine via SSH."""
-        print( "start 1 " ) 
         if not self.client:
             raise Exception("No SSH connection established.")
         try:
-            print( "command run " , command ) 
-            stdin, stdout, stderr = self.client.exec_command(command)
-            stdin.write(f"{self.password}\n")
-            stdin.flush()
+            stdin, stdout, stderr = self.client.exec_command(command)            
+            time.sleep(1)
             error = stderr.read().decode()
             output = stdout.read().decode()
-            if error:
-                print(f"Error running command: {error} command : {command}")
-            return error , output
+            if error and "[sudo] password for" not in error:
+                print("Error running command: {} command : {}".format( error , command ))
+            return output , error
+            
         except Exception as e:
-            print(f"Failed to run command '{command}': {e}")
+            print("Failed to run command '{}': {}".format(command , e ))
             if error : 
-                print(f"Error running command :{error}")
+                print("Error running command :{}".format(error))
             raise e
-
+        finally :             
+            stdin.close()
+            stdout.close()
+            stderr.close()
+ 
     def transfer_file(self, local_path, remote_path):
         """Transfer a file to the remote machine via SFTP."""
         if not self.client:
@@ -55,9 +57,9 @@ class SSHConnection:
             sftp = self.client.open_sftp()
             sftp.put(local_path, remote_path)
             sftp.close()
-            print(f"Transferred {local_path} to {remote_path}")
+            print("Transferred {} to {}".format(local_path, remote_path))
         except Exception as e:
-            print(f"Failed to transfer {local_path} to {remote_path}: {e}")
+            print("Failed to transfer {} to {}: {}".format(local_path, remote_path, e))
             raise e
 
     def download_file(self, remote_path, local_path):
@@ -68,13 +70,13 @@ class SSHConnection:
             sftp = self.client.open_sftp()
             sftp.get(remote_path, local_path)
             sftp.close()
-            print(f"Downloaded {remote_path} to {local_path}")
+            print("Downloaded {} to {}".format(remote_path, local_path))
         except Exception as e:
-            print(f"Failed to download {remote_path}: {e}")
+            print("Failed to download {}: {}".format(remote_path, e))
             raise e
 
     def close(self):
         """Close the SSH connection."""
         if self.client:
             self.client.close()
-            print(f"Disconnected from {self.ip}")
+            print("Disconnected from {}".format(self.ip))
