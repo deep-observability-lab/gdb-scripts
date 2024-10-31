@@ -98,5 +98,3 @@ Configure these variables with values specific to your environment before runnin
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 ```
-
-You can copy and paste this Markdown text directly into your Markdown file. Let me know if you need any further changes!
