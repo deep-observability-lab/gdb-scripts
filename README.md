@@ -14,7 +14,7 @@ This tool simplifies remote debugging by automating essential steps required to 
 - [Argument Descriptions](#argument-descriptions)
 - [Configuration](#configuration)
 - [Workflow](#workflow)
-- [License](#license)
+
 
 ## Features
 - Automates setup and connection for remote debugging.
@@ -95,6 +95,3 @@ Configure these variables with values specific to your environment before runnin
    ```
    This command stops the `gdbserver` on the remote machine and detaches from the process. The local `gdb` instance will also exit.
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
