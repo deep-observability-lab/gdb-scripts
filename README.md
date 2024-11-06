@@ -12,7 +12,6 @@ This tool simplifies remote debugging by automating essential steps required to 
 - [Usage](#usage)
 - [Example Command](#example-command)
 - [Argument Descriptions](#argument-descriptions)
-- [Configuration](#configuration)
 - [Workflow](#workflow)
 
 
@@ -43,47 +42,37 @@ This tool simplifies remote debugging by automating essential steps required to 
 ## Usage
 To initiate remote debugging, run:
 ```bash
-sudo python3 main.py -ip <REMOTE_IP> -u <USERNAME> -pid <PROCESS_ID> -password <PASSWORD> -arch <ARCHITECTURE>
+sudo python3 gdb_remote.py [-h] -i IP -u USERNAME -pid PROCESS_ID [-a ARCHITECTURE]
+                     [-w WORKSPCAE] [-p PORT]
 ```
 
 ## Example Command
 ```bash
-sudo python3 main.py -ip 10.0.2.4 -u remote -pid 1832 -password 1234zremote -arch auto
+sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace -p 3434 -a powerpc:common
 ```
 
 ## Argument Descriptions
-- **-ip** / **--ip**: IP address of the remote machine (e.g., `-ip 192.168.5.5`).
-- **-u** / **--username**: Username for authentication on the remote machine (e.g., `-u root`).
-- **-pid** / **--process_id**: Process ID of the target application (e.g., `-pid 1832`).
-- **-password** / **--password**: Password for authenticating on the remote machine.
-- **-arch** / **--architecture**: Architecture of the cross-compiled binary. Use `auto` for auto-detection.
-
-## Configuration
-In the `config.py` file, there are several global variables to customize based on your system setup:
-- **PORT**: Specify the port for `gdbserver` to use.
-- **SOURCE_CODE_PATH**: The local path where the source code should be downloaded. Ensure that the binary file of the application exists in this path.
-- **REMOTE_LIBRARY_PATH**: The remote path to libraries for the target application.
-
-Configure these variables with values specific to your environment before running the tool.
+- **-h** / **--help**: Show help message and exit.
+- **-i** / **--ip**: IP address of the remote target (e.g., `-i 192.168.5.5`).
+- **-u** / **--username**: Username for authentication on the remote target (e.g., `-u root`).
+- **-pid** / **--process_id**: Process ID of the target process (e.g., `-pid 1234`).
+- **-a** / **--architecture**: Architecture for the cross-compiled binary. Defaults to `auto` if not specified (e.g., `-a x86_64`).
+- **-w** / **--workspace**: Directory where you should put all the shared binaries/app binaries and source codes.
+- **-p** / **--port**: Port to set the `DEFAULT_PORT`. If not specified, GDB uses port 1234 (e.g., `-p 1234`).
 
 ## Workflow
 
 1. **Run Initial Setup**: The script takes the following command as input:
    ```bash
-   sudo python3 main.py -ip 10.0.2.4 -u victim -pid 1832 -password 1234zahra -arch auto
+   sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace -p 3434 -a powerpc:common
    ```
-   This command uses the IP address, username, process ID, password, and architecture type to connect to the remote machine.
+2. **Prepare Workspace**: In the path you provide script as --workspace, put all the sharedbinaries, source codes , and excutable binary of the process you are going to debug. 
 
-2. **Update Configuration**: Update global variables in `config.py` to reflect system-specific values for your environment.
-
-3. **Source Code Download**: The script automatically downloads the program’s source code to the specified path on the user’s computer.
-
-4. **Install Dependencies**: Installs necessary dependencies, such as:
+4. **Install Dependencies**: dependancies would be installed automatically. such as:
    - `gdb-multiarch`
    - `gnome-terminal`
    - Relevant Python packages
-
-5. **Start `gdbserver` on Remote Machine**: After setup, the script initiates `gdbserver` on the remote machine at the port specified in `config.py`.
+5. **Start `gdbserver` on Remote Machine**: After setup, the script initiates `gdbserver` on the remote machine at the port specified in `input args`.
 
 6. **Launch `gdb` Locally**: On the local machine, `gdb` is launched to begin debugging. A custom script is executed within `gdb` to set the correct paths for the source code.
 
