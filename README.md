@@ -1,3 +1,5 @@
+# tool-chain
+=======
 # gdb-scripts
 a set of gdb scripts for heap and stack and other troubleshooting purposes.
 this repository contains : 
@@ -83,4 +85,3 @@ sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace
    exit_gdb
    ```
    This command stops the `gdbserver` on the remote machine and detaches from the process. The local `gdb` instance will also exit.
-
