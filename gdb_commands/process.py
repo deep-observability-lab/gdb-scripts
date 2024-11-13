@@ -2,56 +2,94 @@ import gdb
 import os
 from pretty_print import PrettyPrinter
 
+
 class Process(gdb.Command):
 
     def __init__(self):
         super(Process, self).__init__("process", gdb.COMMAND_USER)
-        print("Process command initialized.")
 
     def count_mmaped_blks(self):
-        mmap = gdb.parse_and_eval('mallinfo()')
-        num_regions = mmap['hblks']
-        total_size = mmap['hblkhd']
-        return num_regions, total_size
+        """Count the number of mmaped blocks and their total size using mallinfo()."""
+        try:
+            mmap_info = gdb.parse_and_eval('mallinfo()')
+            num_regions = int(mmap_info['hblks'])
+            total_size = int(mmap_info['hblkhd'])
+            return num_regions, total_size
+        except gdb.error as e:
+            print("Error fetching mmap information: {}".format(e))
+            return 0, 0
 
     def get_absolute_executable_path(self, pid):
-        # Read the /proc/[pid]/cmdline file
-        cmdline_path = f"/proc/{pid}/cmdline"
+        """Get the absolute path of the executable for the given process ID."""
+        cmdline_path = "/proc/{}/cmdline".format(pid)
         try:
             with open(cmdline_path, "r") as f:
                 cmdline = f.read().split('\0')
-
-            # Get the first element, which is the executable path
             executable_path = cmdline[0]
-
-            # Convert to an absolute path and resolve symbolic links
             absolute_path = os.path.realpath(os.path.abspath(executable_path))
             return absolute_path
         except Exception as e:
-            print(f"Error reading executable path: {e}")
+            print("Error reading executable path: {}".format(e))
             return "<unknown>"
 
     def invoke(self, arg, from_tty):
-        # Fetch process information
-        inferior = gdb.selected_inferior()
-        pid = inferior.pid
-        thread_num = len(inferior.threads())
-        binary_path = self.get_absolute_executable_path(pid)
+        """GDB command to display process information."""
+        try:
+            # Fetch process information
+            inferior = gdb.selected_inferior()
+            pid = inferior.pid
+            if pid == 0:
+                print("No process is currently being debugged.")
+                return
 
-        # Fetch mmap info
-        num_regions, total_size = self.count_mmaped_blks()
+            thread_num = len(inferior.threads())
+            binary_path = self.get_absolute_executable_path(pid)
 
-        # Define table width for pretty printing
-        table_width = 70
+            # Fetch mmap info
+            num_regions, total_size = self.count_mmaped_blks()
 
-        # Pretty print the output
-        PrettyPrinter.print_header("Process Information", width=table_width)
-        PrettyPrinter.print_row("Running File:", binary_path, width=table_width)
-        PrettyPrinter.print_row("Process ID:", pid, width=table_width)
-        PrettyPrinter.print_row("Number of Threads:", thread_num, width=table_width)
-        PrettyPrinter.print_row("Number of mmapped regions:", num_regions, width=table_width)
-        PrettyPrinter.print_row("Space in mmapped regions (bytes):", total_size, width=table_width)
-        PrettyPrinter.print_footer(width=table_width)
+            # Define table width for pretty printing
+            table_width = 70
+
+            header_color = PrettyPrinter.HEADER_COLOR
+            label_color = PrettyPrinter.LABEL_COLOR
+            reset_color = PrettyPrinter.RESET_COLOR
+
+            # Pretty print the output with colors
+            PrettyPrinter.print_header(
+                "{}Process Information{}".format(
+                    header_color, reset_color), width=table_width)
+            PrettyPrinter.print_row(
+                "{}Running File:{}".format(
+                    label_color,
+                    reset_color),
+                binary_path,
+                width=table_width)
+            PrettyPrinter.print_row(
+                "{}Process ID:{}".format(
+                    label_color,
+                    reset_color),
+                str(pid),
+                width=table_width)
+            PrettyPrinter.print_row(
+                "{}Number of Threads:{}".format(
+                    label_color,
+                    reset_color),
+                str(thread_num),
+                width=table_width)
+            PrettyPrinter.print_row(
+                "{}Number of mmapped regions:{}".format(
+                    label_color,
+                    reset_color),
+                str(num_regions),
+                width=table_width)
+            PrettyPrinter.print_row("{}Space in mmapped regions (bytes):{}".format(
+                label_color, reset_color), str(total_size), width=table_width)
+            PrettyPrinter.print_footer(width=table_width)
+
+        except gdb.error as e:
+            print("Error in process command: {}".format(e))
+
 
 # Register the command with GDB
 Process()
