@@ -17,7 +17,7 @@ class Bins(gdb.Command):
             return 0
         bin_head = gdb.parse_and_eval(
             "( *(struct malloc_state*) {}).bins[{}]".format(ar_add, indx * 2 - 2))
-        # print("the head of bin at index {} is {}".format(indx, bin_head))
+       
         return bin_head
 
     def walk_doubled_link_bin_at(self, index, name, bin_head):
