@@ -61,14 +61,14 @@ set environment PASSWORD={}
 python
 import sys
 import os
-import site
 sys.executable = "{}"
 sys.path.insert(0, "{}")
 sys.path.append(os.path.join(os.getcwd(), "gdb_commands/"))
-import end_command
+import ExitCommand
 end
-source gdb_commands/__init__.py
 target extended-remote {}:{}
+dir gdb_commands
+source __init__.py
 attach {}
 """.format(cnf.WORKSPACE, cnf.WORKSPACE, arch, ip, user, pwd, python_path, site_package, ip, port, pid)
 
