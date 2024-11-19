@@ -19,9 +19,11 @@ from heap import Heap
 from arena import Arena
 from bins import Bins
 from process import Process
-
+from deadlock import DeadlockDetector
 # Initialize your classes
+
 Heap()
 Arena()
 Bins()
 Process()
+DeadlockDetector()

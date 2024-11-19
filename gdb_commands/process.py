@@ -19,18 +19,18 @@ class Process(gdb.Command):
             print("Error fetching mmap information: {}".format(e))
             return 0, 0
 
-    def get_absolute_executable_path(self, pid):
+
+
+    def get_absolute_executable_path(self,pid):
         """Get the absolute path of the executable for the given process ID."""
-        cmdline_path = "/proc/{}/cmdline".format(pid)
-        try:
-            with open(cmdline_path, "r") as f:
-                cmdline = f.read().split('\0')
-            executable_path = cmdline[0]
-            absolute_path = os.path.realpath(os.path.abspath(executable_path))
-            return absolute_path
-        except Exception as e:
-            print("Error reading executable path: {}".format(e))
-            return "<unknown>"
+        absolute_path  = gdb.execute("info proc exe", to_string=True)
+        absolute_path = absolute_path.split('\n')[1].split('=')[1].strip("''")
+        return absolute_path
+        # if "process executable is" in absolute_path :
+        #     return absolute_path
+        # else : 
+        #     return "<unknown>"
+
 
     def invoke(self, arg, from_tty):
         """GDB command to display process information."""
@@ -43,13 +43,14 @@ class Process(gdb.Command):
                 return
 
             thread_num = len(inferior.threads())
-            binary_path = self.get_absolute_executable_path(pid)
+            binary_path = self.get_absolute_executable_path(pid )
 
             # Fetch mmap info
             num_regions, total_size = self.count_mmaped_blks()
 
             # Define table width for pretty printing
             table_width = 70
+
 
             header_color = PrettyPrinter.HEADER_COLOR
             label_color = PrettyPrinter.LABEL_COLOR

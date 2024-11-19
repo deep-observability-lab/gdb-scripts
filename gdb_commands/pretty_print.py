@@ -8,6 +8,8 @@ class PrettyPrinter:
     ORANGE_COLOR = "\033[38;5;214m"  # Orange
     RESET_COLOR = "\033[0m"      # Reset
     RED_COLOR = "\033[1;31m"     # Red
+    YELLOW_COLOR = "\033[0;33m"  # Yellow (Normal)
+    PURPLE_COLOR = "\033[1;35m"  # Purple (Bold)
     @staticmethod
     def print_header(title, width=70):
         print(PrettyPrinter.BORDER_COLOR + "=" *
@@ -18,6 +20,7 @@ class PrettyPrinter:
             PrettyPrinter.RESET_COLOR)
         print(PrettyPrinter.BORDER_COLOR + "=" *
               width + PrettyPrinter.RESET_COLOR)
+
 
     @staticmethod
     def print_row(label, data, width=70):
@@ -44,6 +47,7 @@ class PrettyPrinter:
     @staticmethod
     def print_half_header(line, color="\033[38;5;214m"):
         print(color, line, PrettyPrinter.RESET_COLOR)
+
 
     @staticmethod
     def print_centered(text, width=70):
