@@ -20,6 +20,7 @@ from arena import Arena
 from bins import Bins
 from process import Process
 from deadlock import DeadlockDetector
+from end_command import ExitCommand
 # Initialize your classes
 
 Heap()
@@ -27,3 +28,4 @@ Arena()
 Bins()
 Process()
 DeadlockDetector()
+ExitCommand()

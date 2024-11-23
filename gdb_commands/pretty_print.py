@@ -10,6 +10,7 @@ class PrettyPrinter:
     RED_COLOR = "\033[1;31m"     # Red
     YELLOW_COLOR = "\033[0;33m"  # Yellow (Normal)
     PURPLE_COLOR = "\033[1;35m"  # Purple (Bold)
+    BLUE_COLOR = "\033[1;34m"    # Blue (Bold)
     @staticmethod
     def print_header(title, width=70):
         print(PrettyPrinter.BORDER_COLOR + "=" *
@@ -28,7 +29,7 @@ class PrettyPrinter:
         data_str = str(data).ljust(width // 2 - 2)
         formatted_label = PrettyPrinter.LABEL_COLOR + \
             label_str + PrettyPrinter.RESET_COLOR
-        print(f"| {formatted_label} | {data_str} |")
+        print("| {} | {} |".format(formatted_label, data_str))
 
     @staticmethod
     def print_footer(width=70):

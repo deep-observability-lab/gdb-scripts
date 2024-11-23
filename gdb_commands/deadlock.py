@@ -12,7 +12,8 @@ class ThreadInfo:
         self.thread_id = None
 
     def __str__(self):
-        return "Thread ID: {}, Waiting for: {}".format(self.thread_id, self.waiting_for_thread)
+        return "Thread ID: {}, Waiting for: {}".format(
+            self.thread_id, self.waiting_for_thread)
 
 
 class DeadlockDetector(gdb.Command):
@@ -55,11 +56,13 @@ class DeadlockDetector(gdb.Command):
                                     to_string=True).split()[2])
                             thread_info.waiting_for_thread = owner
                             PrettyPrinter.print_half_header(
-                                "Thread {} waiting on mutex owned by {}".format(thread_info.thread_id, owner),
+                                "Thread {} waiting on mutex owned by {}".format(
+                                    thread_info.thread_id, owner),
                                 color=PrettyPrinter.ORANGE_COLOR)
                         except Exception as e:
                             PrettyPrinter.print_half_header(
-                                "Error retrieving mutex owner: {}".format(str(e)),
+                                "Error retrieving mutex owner: {}".format(
+                                    str(e)),
                                 color=PrettyPrinter.RED_COLOR)
                     thread_info.frames.append(frame_name)
                     current_frame = current_frame.older()
@@ -78,12 +81,14 @@ class DeadlockDetector(gdb.Command):
                     deadlocked_pairs.append((tid, waiting_tid))
                     status = "DEADLOCKED"
                     PrettyPrinter.print_half_header(
-                        "Deadlock detected: Thread {} <-> Thread {}".format(tid, waiting_tid),
+                        "Deadlock detected: Thread {} <-> Thread {}".format(
+                            tid, waiting_tid),
                         color=PrettyPrinter.RED_COLOR)
                 else:
                     status = "Waiting"
                     PrettyPrinter.print_half_header(
-                        "Thread {} is waiting for Thread {} - Status: {}".format(tid, waiting_tid, status),
+                        "Thread {} is waiting for Thread {} - Status: {}".format(
+                            tid, waiting_tid, status),
                         color=PrettyPrinter.YELLOW_COLOR)
 
         if deadlocked_pairs:
