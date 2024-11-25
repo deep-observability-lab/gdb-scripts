@@ -65,6 +65,3 @@ class Arena(gdb.Command):
                 "Potential infinite loop detected in arena traversal.")
 
         PrettyPrinter.print_footer(width=table_width)
-
-
-Arena()

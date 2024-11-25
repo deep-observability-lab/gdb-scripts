@@ -1,6 +1,8 @@
 import gdb
 import os
+import re
 from pretty_print import PrettyPrinter
+from global_state import state_manager
 
 
 class Process(gdb.Command):
@@ -11,26 +13,34 @@ class Process(gdb.Command):
     def count_mmaped_blks(self):
         """Count the number of mmaped blocks and their total size using mallinfo()."""
         try:
-            mmap_info = gdb.parse_and_eval('mallinfo()')
-            num_regions = int(mmap_info['hblks'])
-            total_size = int(mmap_info['hblkhd'])
-            return num_regions, total_size
+            if state_manager.is_process:
+                mmap_info = gdb.parse_and_eval('mallinfo()')
+                num_regions = int(mmap_info['hblks'])
+                total_size = int(mmap_info['hblkhd'])
+                return num_regions, total_size
+            else:
+                PrettyPrinter.print_error("not supported in coredump debugging")
+                return None , None 
+
         except gdb.error as e:
             print("Error fetching mmap information: {}".format(e))
-            return 0, 0
+            return 0
 
-
-
-    def get_absolute_executable_path(self,pid):
+    def get_absolute_executable_path(self, pid):
         """Get the absolute path of the executable for the given process ID."""
-        absolute_path  = gdb.execute("info proc exe", to_string=True)
-        absolute_path = absolute_path.split('\n')[1].split('=')[1].strip("''")
-        return absolute_path
+        gdb_output = gdb.execute("info proc exe", to_string=True)
+        match = re.search(r"exe = '(.+)'", gdb_output)
+
+        if match:
+            exe_path = match.group(1)
+            return exe_path
+        else:
+            PrettyPrinter.print_error("can not get the executable path.")
+
         # if "process executable is" in absolute_path :
         #     return absolute_path
-        # else : 
+        # else :
         #     return "<unknown>"
-
 
     def invoke(self, arg, from_tty):
         """GDB command to display process information."""
@@ -43,14 +53,13 @@ class Process(gdb.Command):
                 return
 
             thread_num = len(inferior.threads())
-            binary_path = self.get_absolute_executable_path(pid )
+            binary_path = self.get_absolute_executable_path(pid)
 
             # Fetch mmap info
             num_regions, total_size = self.count_mmaped_blks()
 
             # Define table width for pretty printing
             table_width = 70
-
 
             header_color = PrettyPrinter.HEADER_COLOR
             label_color = PrettyPrinter.LABEL_COLOR

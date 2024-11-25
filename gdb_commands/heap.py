@@ -31,15 +31,29 @@ class Heap(gdb.Command):
 
     def __init__(self):
         super(Heap, self).__init__("heap", gdb.COMMAND_USER)
+        self.mmap = None
+        self.total = None
+        self.free = None
+        self.used = None
+        
 
-    def count_memory_usage(self, inferior, heap_start, heap_end):
+    def read_memory(self, cur, num_words):
+        inferior = gdb.selected_inferior()
+        memory = inferior.read_memory(
+            cur + state_manager.word_size, num_words * 4)
+        word = memory[0:4]
+        value = int.from_bytes(word, byteorder=state_manager.byteorder)
+        return value
+
+    def count_memory_usage(self, heap_start, heap_end):
+
         allocated = 0
         total = heap_end - heap_start
 
         alignment = 0x0
         arch = 64
         word_size = gdb.parse_and_eval("sizeof(void*)")
-        if word_size == 4 : 
+        if word_size == 4:
             arch = 32
 
         if arch == 64:
@@ -52,24 +66,16 @@ class Heap(gdb.Command):
             cur += alignment
 
         nxhdr = 0
-        
         while (cur != heap_end):
             num_words = 1
-            memory = inferior.read_memory(
-                cur + state_manager.word_size, num_words * 4)
-
-            word = memory[0:4]
-            value = int.from_bytes(word, byteorder=state_manager.byteorder)
+            value = self.read_memory(cur, num_words)
             sz = value & ~0x7
 
             nxhdr = cur + sz
             if nxhdr == heap_end:
                 break
-            memory = inferior.read_memory(
-                nxhdr + state_manager.word_size, num_words * 4)
-            word = memory[0:4]
-            value = int.from_bytes(word, byteorder=state_manager.byteorder)
 
+            value = self.read_memory(nxhdr, num_words)
             pbit = (value & 0x1)
             cur = nxhdr
 
@@ -82,13 +88,17 @@ class Heap(gdb.Command):
                 reset_color),
             allocated,
             width=100)
-       
 
     def extract_heap_info(self):
-        mappings_output = gdb.execute("info proc mappings", to_string=True)
         heap_sections = []
-        lines = mappings_output.splitlines()
+        gdb_command = "info proc mappings"
         regex = r'^\s*([0-9a-fx]+)\s+([0-9a-fx]+)\s+([0-9a-fx]+)\s+[0-9a-fx]+\s*$'
+        if not state_manager.is_process:
+            gdb_command = "maintenance info sections"
+            regex = r'^\s*\[\d+\]\s+([0-9a-fA-Fx]+)->([0-9a-fA-Fx]+).*?:.*?ALLOC\s+LOAD\s+HAS_CONTENTS$'
+
+        mappings_output = gdb.execute(gdb_command, to_string=True)
+        lines = mappings_output.splitlines()
 
         for line in lines:
             match = re.match(regex, line)
@@ -103,7 +113,6 @@ class Heap(gdb.Command):
     def extract_heaps(self):
         self.extract_main_heap()
         regions = self.extract_heap_info()
-
         if len(regions) != 0:
             for r in regions:
                 memory = gdb.parse_and_eval(
@@ -112,25 +121,35 @@ class Heap(gdb.Command):
                 if ss in state_manager.arenas:
                     r.ar_add = str(memory['ar_ptr'])
                     r.offset = str(memory['pad']).strip('"')
-                    r.size = int(str(memory['size']) )
+                    r.size = int(str(memory['size']))
                     if str(memory['prev']) == '0x0':
                         r.is_first = True
                     if r.ar_add not in state_manager.arena2heaps:
                         state_manager.arena2heaps[r.ar_add] = []
                     state_manager.arena2heaps[r.ar_add].append(
                         len(state_manager.heaps))
-                    
+
                     state_manager.heaps.append(r)
             for ar in state_manager.arenas:
                 if ar not in state_manager.arena2heaps:
                     state_manager.arena2heaps[ar] = []
 
     def extract_main_heap(self):
+
         main_heap = MemRegion()
         main_heap.start = gdb.execute(
             'p mp_.sbrk_base',
             to_string=True).strip().split(' = ')[1].strip('"')
-        main_heap.end = str(gdb.parse_and_eval("(void *) sbrk(0)"))
+        top_chunk = gdb.execute(
+            'p main_arena.top',
+            to_string=True)
+        pattern = r"0x[0-9a-fA-F]+"
+        match = re.search(pattern, top_chunk)
+        hex_address = match.group()
+        value = self.read_memory(int(hex_address, 16), num_words=1)
+        sz = value & ~0x7
+        main_heap.end = str(hex(int(hex_address, 16) + sz))
+
         total = int(main_heap.end, 16) - int(main_heap.start, 16)
         main_heap.size = total
         main_heap.ar_add = state_manager.arenas[0]
@@ -144,19 +163,25 @@ class Heap(gdb.Command):
         state_manager.heaps = []
         state_manager.arena2heaps = {}
         self.extract_heaps()
-        inferior = gdb.selected_inferior()
+
         cnt = 0
-      
+
+        PrettyPrinter.print_header(
+            "analysis thread's heaps", width=table_width)
         for ar in state_manager.arenas:
             if len(state_manager.arena2heaps[ar]) > 0:
                 for heap_indx in state_manager.arena2heaps[ar]:
+
                     tmp_heap = state_manager.heaps[heap_indx]
                     end = int(tmp_heap.end, 16)
                     start = int(tmp_heap.offset, 16)
-                   
-                    PrettyPrinter.print_header(
-                        "analysis thread's heaps", width=table_width)
-                    
+                    print(
+                        " arena ",
+                        tmp_heap.ar_add,
+                        " offset  ",
+                        tmp_heap.offset)
+                    if (int(tmp_heap.ar_add, 16) == int(tmp_heap.offset, 16)):
+                        start += state_manager.ARENA_SIZE
                     PrettyPrinter.print_devider(100)
                     PrettyPrinter.print_half_header("heap #{}:".format(cnt))
                     PrettyPrinter.print_row(
@@ -185,7 +210,7 @@ class Heap(gdb.Command):
                         width=table_width)
 
                     cnt += 1
-                    
-                    self.count_memory_usage(inferior, start, end)
+
+                    self.count_memory_usage(start, end)
 
         PrettyPrinter.print_footer(100)

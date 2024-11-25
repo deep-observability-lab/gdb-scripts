@@ -1,9 +1,9 @@
 """
 This module provides functions to manage gdbserver through SSH connections.
 
-It includes capabilities to check available ports for gdbserver, 
-run GDB locally with specific parameters, retrieve the program name 
-from gdbserver, and execute gdbserver on a specified port. 
+It includes capabilities to check available ports for gdbserver,
+run GDB locally with specific parameters, retrieve the program name
+from gdbserver, and execute gdbserver on a specified port.
 
 Functions:
 - check_port: Determines an available port for gdbserver.
@@ -19,6 +19,8 @@ import sys
 import site
 from ssh_utils import SSHConnection
 import config as cnf
+import re
+from collections import Counter
 
 
 def check_port(ssh_conn, password, username):
@@ -43,39 +45,134 @@ def check_port(ssh_conn, password, username):
     return 0
 
 
-def run_gdb_local(app, ip, port, pid, user, pwd, arch="auto"):
-    """Run gdb locally with specified parameters."""
-    if arch == None : 
-        arch = "auto"
-    binary_path = os.path.join(cnf.WORKSPACE, app)
+def extract_shared_libraries_from_core(core_dump_path):
+    """Extracts shared libraries from a core dump using readelf and filters paths ending in .so."""
+    try:
+        # Run readelf to get all information, then filter for .so files
+        readelf_output = subprocess.run(
+            ["readelf", "-a", core_dump_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        # Extract .so paths using regex
+        so_paths = []
+        for line in readelf_output.stdout.splitlines():
+            match = re.search(r"(/.+\.so(?:\.[\d]+)*)", line)
+            if match:
+                lib = match.group(1).split('/')[-1]
+                so_paths.append(lib)
+        return so_paths
+
+    except subprocess.CalledProcessError as e:
+        print("Error running readelf: {}".format(e))
+        return {}
+
+
+def check_libraries_in_path(core_dump_path, search_path):
+    """Checks how many shared libraries exist in the given path."""
+    found = []
+    not_found = []
+    libraries = extract_shared_libraries_from_core(core_dump_path)
+
+    for lib in libraries:
+        lib_path = os.path.join(search_path, lib)
+        if os.path.exists(lib_path):
+            found.append(lib)
+        else:
+            not_found.append(lib)
+    result = False
+    if len(not_found) > 0:
+        print("Following libraries were not found in workspace.")
+        for lib in not_found:
+            print("  - {}".format(lib))
+        cont = input("[1] Continue with whatever libraries found in workspace.\n"
+                     "[2] use libraries in default path in local system: /lib /usr/lib /lib64 /usr/lib64\n"
+                     "[3] exit program.\n")
+        if cont == "3":
+            print("Exit.")
+            exit(0)  # Exit with success code
+        elif cont == "1":
+            print("Continuing with the libraries at workspace.")
+            result = True
+        elif cont == "2":
+            print("Using libraries in the default path in the local system.")
+        else:
+            print("Invalid input. Exiting the program.")
+            exit(1)  # Exit with error code
+
+    return found, result
+
+
+def create_gdbcommand(arch, user, pwd, ip, port, pid,
+                      is_live=True, core_file=None):
     python_path = sys.executable
     site_package = site.getsitepackages()[0]
-    gdb_commands = """
-# set auto-solib-add on
-set sysroot {}
-set solib-search-path {}
-set architecture {}
+    solib_path = cnf.WORKSPACE
+    sysroot = cnf.WORKSPACE
+    if not is_live:
+        found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
+        if not cont:
+            solib_path = ''
+            sysroot = '/'
+
+    remote_command = """
 set environment IP_ADDRESS={}
 set environment USERNAME={}
 set environment PASSWORD={}
+""".format(ip, user, pwd)
+    gdb_commands = """
+dir {}
+set pagination off
+set auto-solib-add on
+set sysroot {}
+set solib-search-path {}
+info sharedlibrary
+set architecture {}
 python
 import sys
 import os
 sys.executable = "{}"
 sys.path.insert(0, "{}")
 sys.path.append(os.path.join(os.getcwd(), "gdb_commands/"))
-import ExitCommand
+import end_command
 end
-target extended-remote {}:{}
 dir gdb_commands
 source __init__.py
+""".format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package)
+    if is_live:
+        gdb_commands += remote_command
+        gdb_commands += """
+target extended-remote {}:{}
 attach {}
-""".format(cnf.WORKSPACE, cnf.WORKSPACE, arch, ip, user, pwd, python_path, site_package, ip, port, pid)
+""".format(ip, port, pid)
+    else:
+        gdb_commands = """
+core-file {}
+""".format(core_file) + gdb_commands
+    return gdb_commands
+
+
+def run_gdb_local(app, ip, port, pid, user, pwd,
+                  arch="auto", is_live=True, core_file=None):
+    """Run gdb locally with specified parameters."""
+    if arch is None:
+        arch = "auto"
+    binary_path = os.path.join(cnf.WORKSPACE, app)
+    gdb_commands = create_gdbcommand(
+        arch,
+        user,
+        pwd,
+        ip,
+        port,
+        pid,
+        is_live=is_live,
+        core_file=core_file)
 
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
-
     try:
         gdb_command = (
             'gnome-terminal -- gdb-multiarch -x {} {}'

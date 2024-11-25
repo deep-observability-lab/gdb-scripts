@@ -3,13 +3,10 @@ import subprocess
 from ssh_utils import SSHConnection
 import config as cnf
 
-class setup_local: 
-    def __init__(self, ip, user, pwd): 
-        self.ssh_client = SSHConnection(ip=ip, username=user, password=pwd)
-        self.ssh_client.connect() 
 
-    def close(self):
-        self.ssh_client.close()
+class setup_local:
+    def __init__(self):
+        print("installing packages...")
 
     def is_package_installed(self, package_name):
         """Check if a package is installed."""
@@ -27,7 +24,8 @@ class setup_local:
             print("gnome-terminal not found. Installing...")
             try:
                 subprocess.run(["sudo", "apt-get", "update"], check=True)
-                subprocess.run(["sudo", "apt-get", "install", "-y", "gnome-terminal"], check=True)
+                subprocess.run(["sudo", "apt-get", "install",
+                                "-y", "gnome-terminal"], check=True)
                 print("gnome-terminal installed successfully.")
             except subprocess.CalledProcessError as e:
                 print("Failed to install gnome-terminal.")
@@ -39,14 +37,23 @@ class setup_local:
         if not self.is_package_installed(package_name):
             print("{} is not installed. Installing...".format(package_name))
             try:
-                subprocess.run(["sudo", "apt", "install", package_name, "-y"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                subprocess.run(["sudo",
+                                "apt",
+                                "install",
+                                package_name,
+                                "-y"],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL,
+                               check=True)
                 print("{} installed successfully!\n".format(package_name))
             except subprocess.CalledProcessError as e:
-                print("Error: Failed to install {} with return code {}. Please check your package manager.".format(package_name, e.returncode))
+                print(
+                    "Error: Failed to install {} with return code {}. Please check your package manager.".format(
+                        package_name, e.returncode))
                 exit(e.returncode)
         else:
             print("{} is already installed.\n".format(package_name))
 
-    def setup_local(self): 
+    def setup_local(self):
         self.install_gnome_terminal()
         self.install_gdb_multiarch()
