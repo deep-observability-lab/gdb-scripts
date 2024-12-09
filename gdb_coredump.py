@@ -77,14 +77,18 @@ def main(argv):
         'variants as listed. Examples: powerpc:common, mips:isa32r5, sparc:v9.'
     ))
     parser.add_argument('-c', '--coredump', type=str, required=True,
-                        help='Path for coredump file.')
+                        help='Direct path for coredump file.')
     parser.add_argument('-p', '--program', type=str,
                         help='name of the binary program you wish to debug.')
     parser.add_argument('-w', '--workspcae', type=str,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
+    parser.add_argument('-ui', '--user_intreface', type=str, required=True,
+                        choices=['vscode', 'gdb'],
+                        help='Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
+                    )
     args = parser.parse_args()
     workspace = None
-
+    ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
     if args.workspcae is not None:
         workspace = args.workspcae
     else:
@@ -97,7 +101,7 @@ def main(argv):
     setup.setup_local()
 
     run_gdb_local(args.program, port=None, pid=None, user=None,
-                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump)
+                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump,ui_mood=ui_mood)
 
 
 if __name__ == "__main__":

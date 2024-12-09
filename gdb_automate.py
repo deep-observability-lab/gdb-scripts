@@ -20,8 +20,8 @@ import site
 from ssh_utils import SSHConnection
 import config as cnf
 import re
-from collections import Counter
-
+from launch_json_generator import generate_debug_config
+import shutil
 
 def check_port(ssh_conn, password, username):
     """Check available ports for gdbserver."""
@@ -113,6 +113,8 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     sysroot = cnf.WORKSPACE
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
+        if os.path.dirname(core_file) != cnf.WORKSPACE:
+            shutil.copy(core_file, cnf.WORKSPACE)
         if not cont:
             solib_path = ''
             sysroot = '/'
@@ -155,7 +157,7 @@ core-file {}
 
 
 def run_gdb_local(app, ip, port, pid, user, pwd,
-                  arch="auto", is_live=True, core_file=None):
+                  arch="auto", is_live=True, core_file=None,ui_mood='gdb'):
     """Run gdb locally with specified parameters."""
     if arch is None:
         arch = "auto"
@@ -169,7 +171,6 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         pid,
         is_live=is_live,
         core_file=core_file)
-
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
@@ -182,6 +183,27 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         process.wait()
     except subprocess.SubprocessError as e:
         print("Error starting gdb: {}".format(e))
+
+    if ui_mood == 'vscode' :
+        if is_live :  
+            generate_debug_config(
+                mode= 'live' ,
+                output_path="{}.vscode/launch_live.json".format(cnf.WORKSPACE),
+                ip=ip,
+                port=port,
+                binary_path=binary_path,
+                workspace=cnf.WORKSPACE,
+                gdb_script=tmp_file
+            )
+        else: 
+            generate_debug_config(
+                mode="coredump",
+                output_path="{}.vscode/launch_live.json".format(cnf.WORKSPACE),
+                core_path=core_file,
+                binary_path="/path/to/binary",
+                workspace="/path/to/workspace",
+                gdb_script="/path/to/gdb_script"
+            )
 
 
 def get_program_name(user, ip, pwd, pid):
