@@ -106,7 +106,7 @@ def check_libraries_in_path(core_dump_path, search_path):
 
 
 def create_gdbcommand(arch, user, pwd, ip, port, pid,
-                      is_live=True, core_file=None):
+                      is_live=True, core_file=None,ui_mood='gdb'):
     python_path = sys.executable
     site_package = site.getsitepackages()[0]
     solib_path = cnf.WORKSPACE
@@ -143,16 +143,17 @@ end
 dir gdb_commands
 source __init__.py
 """.format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package)
-    if is_live:
+    if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
 target extended-remote {}:{}
 attach {}
 """.format(ip, port, pid)
     else:
-        gdb_commands = """
-core-file {}
-""".format(core_file) + gdb_commands
+        if ui_mood=='gdb':
+            gdb_commands = """
+            core-file {}
+            """.format(core_file) + gdb_commands
     return gdb_commands
 
 
@@ -170,7 +171,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         port,
         pid,
         is_live=is_live,
-        core_file=core_file)
+        core_file=core_file,
+        ui_mood=ui_mood)
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
