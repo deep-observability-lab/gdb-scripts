@@ -82,7 +82,7 @@ def main(argv):
                         help='name of the binary program you wish to debug.')
     parser.add_argument('-w', '--workspcae', type=str,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
-    parser.add_argument('-ui', '--user_intreface', type=str, required=True,
+    parser.add_argument('-ui', '--user_interface', type=str, required=True,
                         choices=['vscode', 'gdb'],
                         help='Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
                     )

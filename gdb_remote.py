@@ -88,7 +88,7 @@ def main(argv):
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
     parser.add_argument('-p', '--port', type=int,
                         help='Port to set the DEFAULT_PORT. If not specified, gdb use port: 1234.')
-    parser.add_argument('-ui', '--user_intreface', type=str, required=True,
+    parser.add_argument('-ui', '--user_interface', type=str, required=True,
                         choices=['vscode', 'gdb'],
                         help='Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
                     )
@@ -110,7 +110,7 @@ def main(argv):
     ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
     cnf.init(workspace=workspace, default_port=gdb_port)
 
-    setup = setup_local(ip=args.ip, user=args.username, pwd=password)
+    setup = setup_local()
 
     setup.setup_local()
 

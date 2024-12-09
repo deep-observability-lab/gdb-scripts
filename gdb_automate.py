@@ -113,11 +113,20 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     sysroot = cnf.WORKSPACE
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
-        if os.path.dirname(core_file) != cnf.WORKSPACE:
-            shutil.copy(core_file, cnf.WORKSPACE)
+        workspace = os.path.expanduser(cnf.WORKSPACE)
+        core_file=os.path.expanduser(core_file)
+        target_path = os.path.join(workspace, os.path.basename(core_file))
+
+        if not os.path.exists(target_path):
+            shutil.copy(core_file, target_path)
+
         if not cont:
             solib_path = ''
             sysroot = '/'
+    file_name = "gdb_commands"
+    directory = os.getcwd()
+    file_path = os.path.join(directory, file_name)
+    gdb_commands_absolute_path = os.path.abspath(file_path)
 
     remote_command = """
 set environment IP_ADDRESS={}
@@ -137,12 +146,14 @@ import sys
 import os
 sys.executable = "{}"
 sys.path.insert(0, "{}")
-sys.path.append(os.path.join(os.getcwd(), "gdb_commands/"))
+sys.path.append("{}")
+sys.path.append("{}")
 import end_command
 end
-dir gdb_commands
+dir {}
 source __init__.py
-""".format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package)
+""".format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package, 
+           directory, gdb_commands_absolute_path, gdb_commands_absolute_path)
     if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
@@ -176,35 +187,37 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
-    try:
-        gdb_command = (
-            'gnome-terminal -- gdb-multiarch -x {} {}'
-        ).format(tmp_file.name, binary_path)
+        print( tmp_file.name)
+    if ui_mood == 'gdb' : 
+        try:
+            gdb_command = (
+                'gnome-terminal -- gdb-multiarch -x {} {}'
+            ).format(tmp_file.name, binary_path)
 
-        process = subprocess.Popen(gdb_command, shell=True)
-        process.wait()
-    except subprocess.SubprocessError as e:
-        print("Error starting gdb: {}".format(e))
+            process = subprocess.Popen(gdb_command, shell=True)
+            process.wait()
+        except subprocess.SubprocessError as e:
+            print("Error starting gdb: {}".format(e))
 
     if ui_mood == 'vscode' :
         if is_live :  
             generate_debug_config(
                 mode= 'live' ,
-                output_path="{}.vscode/launch_live.json".format(cnf.WORKSPACE),
+                output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
                 ip=ip,
                 port=port,
                 binary_path=binary_path,
                 workspace=cnf.WORKSPACE,
-                gdb_script=tmp_file
+                gdb_script=tmp_file.name
             )
         else: 
             generate_debug_config(
                 mode="coredump",
-                output_path="{}.vscode/launch_live.json".format(cnf.WORKSPACE),
+                output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
                 core_path=core_file,
-                binary_path="/path/to/binary",
-                workspace="/path/to/workspace",
-                gdb_script="/path/to/gdb_script"
+                binary_path=binary_path,
+                workspace=cnf.WORKSPACE,
+                gdb_script=tmp_file.name
             )
 
 
