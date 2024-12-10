@@ -208,7 +208,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 port=port,
                 binary_path=binary_path,
                 workspace=cnf.WORKSPACE,
-                gdb_script=tmp_file.name
+                gdb_script=tmp_file.name.strip('\n'),
+                process_id=pid
             )
         else: 
             generate_debug_config(
@@ -229,6 +230,9 @@ def get_program_name(user, ip, pwd, pid):
         ssh_conn.connect()
         gdbserver_command = 'ps -p {} -o comm='.format(pid)
         program, _ = ssh_conn.run_command(gdbserver_command)
+        program = program.strip()
+        if program.startswith('./'):
+            program = program[2:]
     finally:
         ssh_conn.close()
     return program
