@@ -151,7 +151,6 @@ sys.path.append("{}")
 import end_command
 end
 dir {}
-source __init__.py
 """.format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package, 
            directory, gdb_commands_absolute_path, gdb_commands_absolute_path)
     if is_live and ui_mood=='gdb':
@@ -165,6 +164,7 @@ attach {}
             gdb_commands = """
             core-file {}
             """.format(core_file) + gdb_commands
+    gdb_commands += "source __init__.py"
     return gdb_commands
 
 
@@ -228,7 +228,7 @@ def get_program_name(user, ip, pwd, pid):
     program = ''
     try:
         ssh_conn.connect()
-        gdbserver_command = 'ps -p {} -o comm='.format(pid)
+        gdbserver_command = 'ps -p {} -o args='.format(pid)
         program, _ = ssh_conn.run_command(gdbserver_command)
         program = program.strip()
         if program.startswith('./'):
