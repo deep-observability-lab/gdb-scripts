@@ -37,15 +37,22 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "request": "launch",
                 "program": kwargs["binary_path"],
                 "args": [],
-                "stopAtEntry": False,
-                "cwd": kwargs["workspace"],
+                # "stopAtEntry": False,
+                # "cwd": kwargs["workspace"],
+                "processId" : kwargs['port'],
+                "useExtendedRemote": True,
                 "MIMode": "gdb",
-                "miDebuggerPath": "/usr/bin/gdb",
+                "miDebuggerPath": "/usr/bin/gdb-multiarch",
                 "miDebuggerServerAddress": f"{kwargs['ip']}:{kwargs['port']}",
                 "setupCommands": [
                     {
                         "description": "load gdb commands",
                         "text": f"source {kwargs['gdb_script']}",
+                        "ignoreFailures": False
+                    },
+                    {
+                        "description": "Enable extended remote mode",
+                        "text": f"target extended-remote {kwargs['ip']}:{kwargs['port']}",
                         "ignoreFailures": False
                     }
                 ],
