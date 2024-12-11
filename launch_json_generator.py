@@ -54,6 +54,11 @@ def generate_debug_config(mode, output_path, **kwargs):
                         "description": "Enable extended remote mode",
                         "text": f"target extended-remote {kwargs['ip']}:{kwargs['port']}",
                         "ignoreFailures": False
+                    },
+                    {
+                      "description": "Enable pretty-printing for gdb",
+                      "text": "-enable-pretty-printing",
+                      "ignoreFailures": False
                     }
                 ],
                 "logging": {
@@ -79,6 +84,11 @@ def generate_debug_config(mode, output_path, **kwargs):
                         "description": "Load GDB script",
                         "text": f"source {kwargs['gdb_script']}",
                         "ignoreFailures": False
+                    },
+                    {
+                      "description": "Enable pretty-printing for gdb",
+                      "text": "-enable-pretty-printing",
+                      "ignoreFailures": False
                     }
                 ],
                 "logging": {
