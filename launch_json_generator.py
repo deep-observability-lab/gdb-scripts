@@ -46,19 +46,34 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "miDebuggerServerAddress": f"{kwargs['ip']}:{kwargs['port']}",
                 "setupCommands": [
                     {
+                      "description": "Enable pretty-printing for gdb",
+                      "text": "-enable-pretty-printing",
+                      "ignoreFailures": True
+                    },
+                    {
                         "description": "load gdb commands",
                         "text": f"source {kwargs['gdb_script']}",
-                        "ignoreFailures": False
+                        "ignoreFailures": True
                     },
                     {
                         "description": "Enable extended remote mode",
                         "text": f"target extended-remote {kwargs['ip']}:{kwargs['port']}",
-                        "ignoreFailures": False
+                        "ignoreFailures": True
+                    }, 
+                    {
+                        "description": "Enable Non-Stop Mode",
+                        "text": "set non-stop on",
+                        "ignoreFailures": True
                     },
                     {
-                      "description": "Enable pretty-printing for gdb",
-                      "text": "-enable-pretty-printing",
-                      "ignoreFailures": False
+                        "description": "Enable Target Async",
+                        "text": "set target-async on",
+                        "ignoreFailures": True
+                    },
+                    {
+                        "description": "List threads",
+                        "text": "info threads",
+                        "ignoreFailures": True
                     }
                 ],
                 "logging": {

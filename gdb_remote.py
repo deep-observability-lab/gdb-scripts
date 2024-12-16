@@ -88,9 +88,10 @@ def main(argv):
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
     parser.add_argument('-p', '--port', type=int,
                         help='Port to set the DEFAULT_PORT. If not specified, gdb use port: 1234.')
-    parser.add_argument('-ui', '--user_interface', type=str, required=True,
-                        choices=['vscode', 'gdb'],
-                        help='Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
+    parser.add_argument('-ui', '--user_interface', type=str,
+                    choices=['vscode', 'gdb'],
+                    default='gdb',
+                    help='Specifies the user interface for debugging. Default: "gdb". Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
                     )
     args = parser.parse_args()
     workspace = None

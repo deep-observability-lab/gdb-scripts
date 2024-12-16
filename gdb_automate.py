@@ -116,9 +116,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
         workspace = os.path.expanduser(cnf.WORKSPACE)
         core_file=os.path.expanduser(core_file)
         target_path = os.path.join(workspace, os.path.basename(core_file))
-
-        if not os.path.exists(target_path):
-            shutil.copy(core_file, target_path)
+        shutil.copy(core_file, target_path)
 
         if not cont:
             solib_path = ''
@@ -206,8 +204,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
                 ip=ip,
                 port=port,
-                binary_path=binary_path,
-                workspace=cnf.WORKSPACE,
+                binary_path=binary_path.strip('\n'),
+                workspace=cnf.WORKSPACE.strip('\n'),
                 gdb_script=tmp_file.name.strip('\n'),
                 process_id=pid
             )
@@ -215,10 +213,10 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
             generate_debug_config(
                 mode="coredump",
                 output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
-                core_path=core_file,
-                binary_path=binary_path,
-                workspace=cnf.WORKSPACE,
-                gdb_script=tmp_file.name
+                core_path=core_file.strip('\n'),
+                binary_path=binary_path.strip('\n'),
+                workspace=cnf.WORKSPACE.strip('\n'),
+                gdb_script=tmp_file.name.strip('\n'),
             )
 
 

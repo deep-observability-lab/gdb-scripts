@@ -77,14 +77,15 @@ def main(argv):
         'variants as listed. Examples: powerpc:common, mips:isa32r5, sparc:v9.'
     ))
     parser.add_argument('-c', '--coredump', type=str, required=True,
-                        help='Direct path for coredump file.')
+                        help='Absolute path for coredump file.')
     parser.add_argument('-p', '--program', type=str,
                         help='name of the binary program you wish to debug.')
     parser.add_argument('-w', '--workspcae', type=str,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
-    parser.add_argument('-ui', '--user_interface', type=str, required=True,
-                        choices=['vscode', 'gdb'],
-                        help='Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
+    parser.add_argument('-ui', '--user_interface', type=str,
+                    choices=['vscode', 'gdb'],
+                    default='gdb',
+                    help='Specifies the user interface for debugging. Default: "gdb". Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.'
                     )
     args = parser.parse_args()
     workspace = None
