@@ -43,8 +43,8 @@ This tool simplifies remote debugging by automating essential steps required to 
 
 ## Usage
 To initiate remote debugging, run:
-```
-bashsudo python3 gdb_remote.py [-h] -i IP -u USERNAME -pid PROCESS_ID [-a ARCHITECTURE]
+```bash
+sudo python3 gdb_remote.py [-h] -i IP -u USERNAME -pid PROCESS_ID [-a ARCHITECTURE]
                      -ui USER_INTERFACE [-w WORKSPCAE] [-p PORT] 
 ```
 
