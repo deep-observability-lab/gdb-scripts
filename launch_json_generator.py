@@ -36,10 +36,10 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "type": "cppdbg",
                 "request": "attach",
                 "program": kwargs["binary_path"],
-                "args": [],
+               
                 # "stopAtEntry": False,
                 # "cwd": kwargs["workspace"],
-                "processId" : kwargs['process_id'],
+                "processId" : int(kwargs['process_id']),
                 "useExtendedRemote": True,
                 "MIMode": "gdb",
                 "miDebuggerPath": "/usr/bin/gdb-multiarch",
@@ -48,40 +48,54 @@ def generate_debug_config(mode, output_path, **kwargs):
                     {
                       "description": "Enable pretty-printing for gdb",
                       "text": "-enable-pretty-printing",
-                      "ignoreFailures": True
+                       "ignoreFailures": False
                     },
                     {
-                        "description": "load gdb commands",
-                        "text": f"source {kwargs['gdb_script']}",
-                        "ignoreFailures": True
+                        "description": "set gdb architecture to destination architecture.",
+                        "text": f"set architecture {kwargs['arch']}",
+                         "ignoreFailures": False
                     },
                     {
                         "description": "Enable extended remote mode",
                         "text": f"target extended-remote {kwargs['ip']}:{kwargs['port']}",
-                        "ignoreFailures": True
-                    }, 
+                         "ignoreFailures": False
+                    },       
                     {
                         "description": "Enable Non-Stop Mode",
                         "text": "set non-stop on",
-                        "ignoreFailures": True
+                         "ignoreFailures": False
                     },
                     {
                         "description": "Enable Target Async",
                         "text": "set target-async on",
-                        "ignoreFailures": True
+                         "ignoreFailures": False
                     },
                     {
                         "description": "List threads",
                         "text": "info threads",
-                        "ignoreFailures": True
+                         "ignoreFailures": False
+                    },
+                    {
+                        "description": "Ignore SIGALRM signal",
+                        "text": "handle SIGALRM nostop noprint",
+                         "ignoreFailures": False
+                    },
+                    {
+                        "description": "Ignore SIGSTOP signal",
+                        "text": "handle SIGSTOP nostop noprint",
+                         "ignoreFailures": False
+                    }, 
+                    {
+                        "description": "load gdb commands",
+                        "text": f"source {kwargs['gdb_script']}",
+                         "ignoreFailures": False
                     }
                 ],
                 "logging": {
                     "engineLogging": False,
                     "trace": False,
                     "traceResponse": False
-                },
-                "externalConsole": False
+                }
             }
         elif mode == "coredump":
             config = {
@@ -126,6 +140,9 @@ def generate_debug_config(mode, output_path, **kwargs):
         with open(output_path, "w") as f:
             json.dump(launch_json, f, indent=4)
         print(f"launch.json written to {output_path}")
+        print("open vscode in the path <workspace>/<release>/\n .vscode/launch.json is generated.")
+        print("gdbserver is listening on remote...")
+
 
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
