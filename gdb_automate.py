@@ -116,8 +116,20 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
         workspace = os.path.expanduser(cnf.WORKSPACE)
         core_file=os.path.expanduser(core_file)
         target_path = os.path.join(workspace, os.path.basename(core_file))
-        shutil.copy(core_file, target_path)
+        #shutil.copy(core_file, target_path)
 
+        src_abs = os.path.abspath(core_file)
+        dst_abs = os.path.abspath(target_path)
+
+        # Check if the source and destination are the same
+        if src_abs == dst_abs:
+            print("Source and destination are the same file. Skipping copy.")
+        else:
+            try:
+                shutil.copy(core_file, target_path)
+                print(f"Copied {core_file} to {target_path}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
         if not cont:
             solib_path = ''
             sysroot = '/'
@@ -172,6 +184,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     """Run gdb locally with specified parameters."""
     if arch is None:
         arch = "auto"
+    print("here  eeee " , cnf.WORKSPACE  )
     binary_path = os.path.join(cnf.WORKSPACE, app)
     gdb_commands = create_gdbcommand(
         arch,
