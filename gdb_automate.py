@@ -137,7 +137,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     directory = os.getcwd()
     file_path = os.path.join(directory, file_name)
     gdb_commands_absolute_path = os.path.abspath(file_path)
-
+    
     remote_command = """
 set environment IP_ADDRESS={}
 set environment USERNAME={}
@@ -152,6 +152,7 @@ set sysroot {}
 set solib-search-path {}
 info sharedlibrary
 set architecture {}
+
 python
 import sys
 import os
@@ -160,10 +161,12 @@ sys.path.insert(0, "{}")
 sys.path.append("{}")
 sys.path.append("{}")
 import end_command
+from substitute_path import substitution
+substitution("{}")
 end
 dir {}
 """.format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
-           directory, gdb_commands_absolute_path, gdb_commands_absolute_path)
+           directory, gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path)
     if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
@@ -200,6 +203,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
+        os.chmod(temp_file, 0o777)
         print( tmp_file.name)
     if ui_mood == 'gdb' : 
         try:
@@ -216,7 +220,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         if is_live :  
             generate_debug_config(
                 mode= 'live' ,
-                output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
+                output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 ip=ip,
                 port=port,
                 binary_path=binary_path.strip('\n'),
@@ -227,7 +231,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         else: 
             generate_debug_config(
                 mode="coredump",
-                output_path="{}.vscode/launch.json".format(cnf.WORKSPACE),
+                output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 core_path=core_file.strip('\n'),
                 binary_path=binary_path.strip('\n'),
                 workspace=cnf.WORKSPACE.strip('\n'),

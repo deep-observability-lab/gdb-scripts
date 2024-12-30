@@ -137,7 +137,7 @@ def generate_debug_config(mode, output_path, **kwargs):
         }
 
         # Write to file
-        with open(output_path, "w") as f:
+        with open(output_path , "w") as f:
             json.dump(launch_json, f, indent=4)
         print(f"launch.json written to {output_path}")
         print("open vscode in the path <workspace>/<release>/\n .vscode/launch.json is generated.")

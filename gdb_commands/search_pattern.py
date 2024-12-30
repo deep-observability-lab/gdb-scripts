@@ -25,36 +25,40 @@ def get_memory_ranges():
         return []
 
 
-# Function to search for the pattern in memory
+def read_memory( address , size_to_read , byte_order ):
+        inferior = gdb.selected_inferior()
+        memory = inferior.read_memory(
+            address , size_to_read)
+        # word = memory[0:4]
+        value = int.from_bytes(memory , byteorder=byte_order)
+        return value
+
 def search_pattern(start_addr, pattern , byte_num):
-    # Convert start address and pattern into integers
-    start_addr = start_addr
-    pattern = bytes.fromhex(pattern)
+   
+    pattern = str(pattern)
     print( "start searching at : " , hex(start_addr ))
     print("pattern : " , pattern )
     current_addr = start_addr
+    size_of_char = gdb.lookup_type("char").pointer().target().sizeof
+    if byte_num < size_of_char : 
+        print( "number of byte to read is less than char size.")
+        return
+
+    byte_order = gdb.execute("show endian", to_string=True)
+    if "little" in byte_order:
+        byte_order = 'little'
+    elif "big" in byte_order:
+        byte_order = 'big'
+
     pre = ''
     while True:
         try:
-            # Read memory from current address with buffer size
-            mem = gdb.execute(f'x/{byte_num}bx {current_addr}', to_string=True).split(":")[1]
-            striped = mem.strip().replace(' ', '').replace('\n', '')
-            
-            hex_values = re.findall(r'0x[0-9a-fA-F]+', mem)
-
-            # Step 2: Remove the '0x' prefix and join the hex values
-            striped = ''.join(value[2:] for value in hex_values)
-
-            # Step 3: Convert the hex string to bytes
-            #print("byte data : " , striped  )    
-            byte_data = bytes.fromhex(striped)
-            # Check if the pattern is found in the read memory
-        
-            if pattern in byte_data:
+           
+            mem = read_memory(current_addr, byte_num, byte_order)   
+            if pattern in str(mem):
                 print(f'Pattern found at address: 0x{current_addr:08x}')
                 break
             pre = current_addr
-            #print("address : " , hex(pre ))
             # Move to the next memory chunk
             current_addr += byte_num
         
@@ -69,11 +73,11 @@ def search_pattern(start_addr, pattern , byte_num):
 def main():
 
     #start_address = "0f6bc844"#"0f614d54"  #sys.argv[1]
-    pattern = "9421ffe0" #sys.argv[2]
+    pattern = "0x9421ffe0" #sys.argv[2]
+    hex_digits = pattern[2:]  # '9421ffe0'
+    byte_num  = len(hex_digits) // 2
     start_addresses = get_memory_ranges()
-    byte_num = 4 
     for address in start_addresses : 
-    # Run the pattern search function
         search_pattern( address, pattern , byte_num)
     
 

@@ -1,6 +1,8 @@
 import gdb
 import os
 import re 
+from pathlib import Path
+
 
 def get_info_sources():
     """Get the output of the 'info sources' command in GDB."""
@@ -26,36 +28,44 @@ def get_directory_names(target_path_abs):
 def find_matching_directories(target_path):
     """Find directories in the output of 'info sources' that match the target path."""
     # Get the output of 'info sources'
-    sources_output = get_info_sources()
-  
+    sources_output = get_info_sources().split(',')
+    
     # Split the output into lines and extract directories
     source_dirs = set()
-    for line in sources_output.splitlines():
+    for line in sources_output:
         # Extract the directory from the line
         line = line.strip()
-        # if line and os.path.isdir(line):
-        source_dirs.add(os.path.abspath(line))
-
+       
+        source_dirs.add(line)
+    
     # Get the absolute path of the target directory
     target_path_abs = os.path.abspath(target_path)
     # Find matching directories
-    print("target : " , target_path_abs )
-    matching_dirs = []
+    
+    matching_dirs = set()
     dirs = get_directory_names(target_path_abs )
     for source_dir in dirs :
-        print( source_dir)
-        if target_path_abs in source_dir:
-            matching_dirs.append(source_dir)
-
+     
+        for p in source_dirs: 
+            if source_dir in p:
+                p_path = p.split( source_dir)[0]
+               
+                matching_dirs.add(p_path)
+    print(matching_dirs )
     return matching_dirs
 
-# Example usage
-if __name__ == "__main__":
-    target_directory = "../workspace/"  # Replace with your target directory
-    matching_directories = find_matching_directories(target_directory)
-    
-    print("Matching directories:")
-    for directory in matching_directories:
-        print(directory)
+def substitute_path(paths, target_path):
+    for path in paths:
+        try:
+            # Construct and execute the GDB command within the GDB environment
+            gdb.execute(f"set substitute-path {path} {target_path}")
+            # result += f"set substitute-path {path} {target_path}\n"
+            print(f"Substitute path command executed for: {path}")
+        except gdb.error as e:
+            print(f"Error executing substitute-path for {path}: {e}")
 
-# https://gist.github.com/ricksladkey/bdcd761a5b06e3d670728d8cc96458ba
+
+def substitution(target_directory ):
+    matching_directories = find_matching_directories(target_directory)
+    substitute_path(matching_directories , target_directory )
+
