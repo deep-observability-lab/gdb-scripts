@@ -1,13 +1,14 @@
 import gdb
 import sys
 
+
 class GlobalState:
     def __init__(self):
         self.bins = []
         self.arenas = []
         self.heaps = []
         self.arena2heaps = {}
-        
+
         # Initialize word size
         try:
             self.word_size = gdb.lookup_type('void').pointer().sizeof
@@ -54,6 +55,7 @@ class GlobalState:
             return True
         except gdb.error as e:
             return False
+
 
 # Create an instance of GlobalState
 state_manager = GlobalState()

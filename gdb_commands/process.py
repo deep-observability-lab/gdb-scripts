@@ -19,8 +19,9 @@ class Process(gdb.Command):
                 total_size = int(mmap_info['hblkhd'])
                 return num_regions, total_size
             else:
-                PrettyPrinter.print_error("not supported in coredump debugging")
-                return None , None 
+                PrettyPrinter.print_error(
+                    "not supported in coredump debugging")
+                return None, None
 
         except gdb.error as e:
             print("Error fetching mmap information: {}".format(e))

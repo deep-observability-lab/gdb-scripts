@@ -35,7 +35,6 @@ class Heap(gdb.Command):
         self.total = None
         self.free = None
         self.used = None
-        
 
     def read_memory(self, cur, num_words):
         inferior = gdb.selected_inferior()
