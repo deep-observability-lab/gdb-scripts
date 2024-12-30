@@ -20,8 +20,8 @@ import site
 from ssh_utils import SSHConnection
 import config as cnf
 import re
-from collections import Counter
-
+from launch_json_generator import generate_debug_config
+import shutil
 
 def check_port(ssh_conn, password, username):
     """Check available ports for gdbserver."""
@@ -106,17 +106,38 @@ def check_libraries_in_path(core_dump_path, search_path):
 
 
 def create_gdbcommand(arch, user, pwd, ip, port, pid,
-                      is_live=True, core_file=None):
+                      binary_path ,is_live=True, core_file=None,ui_mood='gdb'):
     python_path = sys.executable
     site_package = site.getsitepackages()[0]
     solib_path = cnf.WORKSPACE
     sysroot = cnf.WORKSPACE
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
+        workspace = os.path.expanduser(cnf.WORKSPACE)
+        core_file=os.path.expanduser(core_file)
+        target_path = os.path.join(workspace, os.path.basename(core_file))
+        #shutil.copy(core_file, target_path)
+
+        src_abs = os.path.abspath(core_file)
+        dst_abs = os.path.abspath(target_path)
+
+        # Check if the source and destination are the same
+        if src_abs == dst_abs:
+            print("Source and destination are the same file. Skipping copy.")
+        else:
+            try:
+                shutil.copy(core_file, target_path)
+                print(f"Copied {core_file} to {target_path}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
         if not cont:
             solib_path = ''
             sysroot = '/'
-
+    file_name = "gdb_commands"
+    directory = os.getcwd()
+    file_path = os.path.join(directory, file_name)
+    gdb_commands_absolute_path = os.path.abspath(file_path)
+    
     remote_command = """
 set environment IP_ADDRESS={}
 set environment USERNAME={}
@@ -124,41 +145,49 @@ set environment PASSWORD={}
 """.format(ip, user, pwd)
     gdb_commands = """
 dir {}
+file {}
 set pagination off
 set auto-solib-add on
 set sysroot {}
 set solib-search-path {}
 info sharedlibrary
 set architecture {}
+
 python
 import sys
 import os
 sys.executable = "{}"
 sys.path.insert(0, "{}")
-sys.path.append(os.path.join(os.getcwd(), "gdb_commands/"))
+sys.path.append("{}")
+sys.path.append("{}")
 import end_command
+from substitute_path import substitution
+substitution("{}")
 end
-dir gdb_commands
-source __init__.py
-""".format(cnf.WORKSPACE, sysroot, solib_path, arch, python_path, site_package)
-    if is_live:
+dir {}
+""".format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
+           directory, gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path)
+    if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
 target extended-remote {}:{}
 attach {}
 """.format(ip, port, pid)
     else:
-        gdb_commands = """
-core-file {}
-""".format(core_file) + gdb_commands
+        if ui_mood=='gdb':
+            gdb_commands = """
+            core-file {}
+            """.format(core_file) + gdb_commands
+    gdb_commands += "source __init__.py"
     return gdb_commands
 
 
 def run_gdb_local(app, ip, port, pid, user, pwd,
-                  arch="auto", is_live=True, core_file=None):
+                  arch="auto", is_live=True, core_file=None,ui_mood='gdb'):
     """Run gdb locally with specified parameters."""
     if arch is None:
         arch = "auto"
+    print("here  eeee " , cnf.WORKSPACE  )
     binary_path = os.path.join(cnf.WORKSPACE, app)
     gdb_commands = create_gdbcommand(
         arch,
@@ -168,20 +197,46 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         port,
         pid,
         is_live=is_live,
-        core_file=core_file)
-
+        core_file=core_file,
+        ui_mood=ui_mood, 
+        binary_path=binary_path)
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
-    try:
-        gdb_command = (
-            'gnome-terminal -- gdb-multiarch -x {} {}'
-        ).format(tmp_file.name, binary_path)
+        os.chmod(temp_file, 0o777)
+        print( tmp_file.name)
+    if ui_mood == 'gdb' : 
+        try:
+            gdb_command = (
+                'gnome-terminal -- gdb-multiarch -x {} {}'
+            ).format(tmp_file.name, binary_path)
 
-        process = subprocess.Popen(gdb_command, shell=True)
-        process.wait()
-    except subprocess.SubprocessError as e:
-        print("Error starting gdb: {}".format(e))
+            process = subprocess.Popen(gdb_command, shell=True)
+            process.wait()
+        except subprocess.SubprocessError as e:
+            print("Error starting gdb: {}".format(e))
+
+    if ui_mood == 'vscode' :
+        if is_live :  
+            generate_debug_config(
+                mode= 'live' ,
+                output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
+                ip=ip,
+                port=port,
+                binary_path=binary_path.strip('\n'),
+                workspace=cnf.WORKSPACE.strip('\n'),
+                gdb_script=tmp_file.name.strip('\n'),
+                process_id=pid
+            )
+        else: 
+            generate_debug_config(
+                mode="coredump",
+                output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
+                core_path=core_file.strip('\n'),
+                binary_path=binary_path.strip('\n'),
+                workspace=cnf.WORKSPACE.strip('\n'),
+                gdb_script=tmp_file.name.strip('\n'),
+            )
 
 
 def get_program_name(user, ip, pwd, pid):
@@ -190,8 +245,11 @@ def get_program_name(user, ip, pwd, pid):
     program = ''
     try:
         ssh_conn.connect()
-        gdbserver_command = 'ps -p {} -o comm='.format(pid)
+        gdbserver_command = 'ps -p {} -o args='.format(pid)
         program, _ = ssh_conn.run_command(gdbserver_command)
+        program = program.strip()
+        if program.startswith('./'):
+            program = program[2:]
     finally:
         ssh_conn.close()
     return program
