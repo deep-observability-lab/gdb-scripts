@@ -1,3 +1,9 @@
+from end_command import ExitCommand
+from deadlock import DeadlockDetector
+from process import Process
+from bins import Bins
+from arena import Arena
+from heap import Heap
 import gdb
 import importlib
 import sys
@@ -15,12 +21,6 @@ for module_name in module_names:
         importlib.reload(sys.modules[module_name])
 
 # Import classes from your modules
-from heap import Heap
-from arena import Arena
-from bins import Bins
-from process import Process
-from deadlock import DeadlockDetector
-from end_command import ExitCommand
 # Initialize your classes
 
 Heap()

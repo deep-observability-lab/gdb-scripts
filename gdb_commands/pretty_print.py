@@ -22,7 +22,6 @@ class PrettyPrinter:
         print(PrettyPrinter.BORDER_COLOR + "=" *
               width + PrettyPrinter.RESET_COLOR)
 
-
     @staticmethod
     def print_row(label, data, width=70):
         label_str = str(label).ljust(width // 2 - 2)
@@ -48,7 +47,6 @@ class PrettyPrinter:
     @staticmethod
     def print_half_header(line, color="\033[38;5;214m"):
         print(color, line, PrettyPrinter.RESET_COLOR)
-
 
     @staticmethod
     def print_centered(text, width=70):

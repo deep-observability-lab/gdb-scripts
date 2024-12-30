@@ -78,7 +78,7 @@ def main(argv):
     ))
     parser.add_argument('-c', '--coredump', type=str, required=True,
                         help='Absolute path for coredump file.')
-    parser.add_argument('-p', '--program', type=str,
+    parser.add_argument('-p', '--program', type=str, required=True, 
                         help='name of the binary program you wish to debug.')
     parser.add_argument('-w', '--workspcae', type=str,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
