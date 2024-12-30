@@ -77,7 +77,7 @@ def main(argv):
         'variants as listed. Examples: powerpc:common, mips:isa32r5, sparc:v9.'
     ))
     parser.add_argument('-c', '--coredump', type=str, required=True,
-                        help='Absolute path for coredump file.')
+                        help='name of coredump file which should be located on workspace path.')
     parser.add_argument('-p', '--program', type=str, required=True, 
                         help='name of the binary program you wish to debug.')
     parser.add_argument('-w', '--workspcae', type=str,
@@ -100,9 +100,15 @@ def main(argv):
 
     setup = setup_local()
     setup.setup_local()
+    core_file_path = os.path.join( workspace,args.coredump )
+    if os.path.exists(core_file_path):
+        print(f"{core_file_path} exists.")
+    else:
+        print(f"{core_file_path} does not exist.")
+        exit()
 
     run_gdb_local(args.program, port=None, pid=None, user=None,
-                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump,ui_mood=ui_mood)
+                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=core_file_path, ui_mood=ui_mood)
 
 
 if __name__ == "__main__":

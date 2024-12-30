@@ -204,12 +204,14 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
         os.chmod(temp_file, 0o777)
-        print( tmp_file.name)
+        shutil.copy(temp_file_path, cnf.WORKSPACE)
+        print(f"gdb script file copied to {cnf.WORKSPACE}")
+
     if ui_mood == 'gdb' : 
         try:
             gdb_command = (
                 'gnome-terminal -- gdb-multiarch -x {} {}'
-            ).format(tmp_file.name, binary_path)
+            ).format(cnf.WORKSPACE, binary_path)
 
             process = subprocess.Popen(gdb_command, shell=True)
             process.wait()
