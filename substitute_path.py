@@ -29,7 +29,6 @@ def find_matching_directories(target_path):
     """Find directories in the output of 'info sources' that match the target path."""
     # Get the output of 'info sources'
     sources_output = get_info_sources().split(',')
-    
     # Split the output into lines and extract directories
     source_dirs = set()
     for line in sources_output:

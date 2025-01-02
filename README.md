@@ -73,7 +73,7 @@ sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace
 
 4. **Install Dependencies**: dependancies would be installed automatically. such as:
    - `gdb-multiarch`
-   - `gnome-terminal`
+   - `tmux`
    - Relevant Python packages
 5. **Start `gdbserver` on Remote Machine**: After setup, the script initiates `gdbserver` on the remote machine at the port specified in `input args`.
 

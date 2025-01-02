@@ -8,24 +8,35 @@ import gdb
 import importlib
 import sys
 import os
+from pretty_print import PrettyPrinter
 
-# Add the directory of the current script to sys.path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
 
-# Reload modules if already imported
-module_names = list(sys.modules.keys())
-for module_name in module_names:
-    if module_name in ['heap', 'arena', 'bins', 'process']:
-        importlib.reload(sys.modules[module_name])
+gdb.execute('info sharedlibrary')
+output = gdb.execute('info sharedlibrary', to_string=True)
 
-# Import classes from your modules
-# Initialize your classes
+output = gdb.execute('info sharedlibrary', to_string=True)
 
-Heap()
-Arena()
-Bins()
-Process()
-DeadlockDetector()
-ExitCommand()
+lines = output.splitlines()
+for line in lines:
+    if 'libc.so.6' in line:
+        # Check if the row contains 'Yes (*)', meaning it is loaded with debug symbols
+        if 'Yes (*)' in line:            
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            if current_dir not in sys.path:
+                sys.path.insert(0, current_dir)
+
+            # Reload modules if already imported
+            module_names = list(sys.modules.keys())
+            for module_name in module_names:
+                if module_name in ['heap', 'arena', 'bins', 'process']:
+                    importlib.reload(sys.modules[module_name])
+            Heap()
+            Arena()
+            Bins()
+            Process()
+            DeadlockDetector()
+            ExitCommand()
+        else:
+            PrettyPrinter.print_error("libc.so.6 is loaded, but without debug symbols. command for memory debuging is not accessible.")
+            # return None
+        # return
