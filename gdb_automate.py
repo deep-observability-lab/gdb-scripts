@@ -133,11 +133,10 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
         if not cont:
             solib_path = ''
             sysroot = '/'
-    file_name = "gdb_commands"
+    file_name = "gdb_commands/"
     directory = os.getcwd()
     file_path = os.path.join(directory, file_name)
     gdb_commands_absolute_path = os.path.abspath(file_path)
-    
     remote_command = """
 set environment IP_ADDRESS={}
 set environment USERNAME={}
@@ -160,13 +159,14 @@ sys.executable = "{}"
 sys.path.insert(0, "{}")
 sys.path.append("{}")
 sys.path.append("{}")
+sys.path.append("{}")
 import end_command
 from substitute_path import substitution
-substitution("{}")
+# substitution("{}")
 end
 dir {}
 """.format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
-           directory, gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path)
+           directory, site_package ,gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path) 
     if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
@@ -187,8 +187,9 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     """Run gdb locally with specified parameters."""
     if arch is None:
         arch = "auto"
-    print("here  eeee " , cnf.WORKSPACE  )
+   
     binary_path = os.path.join(cnf.WORKSPACE, app)
+   
     gdb_commands = create_gdbcommand(
         arch,
         user,
@@ -203,16 +204,20 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
-        os.chmod(temp_file, 0o777)
-        shutil.copy(temp_file_path, cnf.WORKSPACE)
+        os.chmod(str(tmp_file.name ), 0o777)
+        tmp_file.close()
+        shutil.copy( tmp_file.name , cnf.WORKSPACE)
         print(f"gdb script file copied to {cnf.WORKSPACE}")
-
+    gdb_script_path = cnf.WORKSPACE + '/' + str(tmp_file.name).split('/')[-1]
+   
     if ui_mood == 'gdb' : 
-        try:
+        try:       
+            # gdb_command = (
+            #     'gnome-terminal -- gdb-multiarch -x {} {}'
+            # ).format(cnf.WORKSPACE, binary_path)      
             gdb_command = (
-                'gnome-terminal -- gdb-multiarch -x {} {}'
-            ).format(cnf.WORKSPACE, binary_path)
-
+                'tmux new-session -s gdb_session "gdb-multiarch -x {} {}"'
+            ).format(gdb_script_path, binary_path)
             process = subprocess.Popen(gdb_command, shell=True)
             process.wait()
         except subprocess.SubprocessError as e:
@@ -227,17 +232,17 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 port=port,
                 binary_path=binary_path.strip('\n'),
                 workspace=cnf.WORKSPACE.strip('\n'),
-                gdb_script=tmp_file.name.strip('\n'),
+                gdb_script=gdb_script_path,
                 process_id=pid
             )
-        else: 
+        else:   
             generate_debug_config(
                 mode="coredump",
                 output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 core_path=core_file.strip('\n'),
                 binary_path=binary_path.strip('\n'),
                 workspace=cnf.WORKSPACE.strip('\n'),
-                gdb_script=tmp_file.name.strip('\n'),
+                gdb_script=gdb_script_path
             )
 
 

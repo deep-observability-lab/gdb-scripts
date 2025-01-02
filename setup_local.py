@@ -56,4 +56,4 @@ class setup_local:
 
     def setup_local(self):
         self.install_gnome_terminal()
-        self.install_gdb_multiarch()
+        # self.install_gdb_multiarch()
