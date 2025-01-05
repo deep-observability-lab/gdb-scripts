@@ -35,7 +35,7 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "name": "Remote Debugging with GDB",
                 "type": "cppdbg",
                 "request": "attach",
-                "program": kwargs["binary_path"],
+                "program": "${{{workspaceFolder}}}{}".format(kwargs["binary_path"]),
                
                 # "stopAtEntry": False,
                 # "cwd": kwargs["workspace"],
@@ -87,8 +87,8 @@ def generate_debug_config(mode, output_path, **kwargs):
                     }, 
                     {
                         "description": "load gdb commands",
-                        "text": f"source {kwargs['gdb_script']}",
-                         "ignoreFailures": False
+                        "text": "source ${{workspaceFolder}}{}".format(kwargs['gdb_script']),
+                        "ignoreFailures": False
                     }
                 ],
                 "logging": {
@@ -102,7 +102,7 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "name": "Debug Core Dump",
                 "type": "cppdbg",
                 "request": "launch",
-                "program": kwargs["binary_path"],
+                "program": "${{workspaceFolder}}{}".format(kwargs["binary_path"]),
                 "coreDumpPath": kwargs["core_path"],
                 "stopAtEntry": True,
                 "cwd": kwargs["workspace"],
@@ -111,7 +111,7 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "setupCommands": [
                     {
                         "description": "Load GDB script",
-                        "text": f"source {kwargs['gdb_script']}",
+                        "text": "source ${{workspaceFolder}}{}".format(kwargs['gdb_script']),
                         "ignoreFailures": False
                     },
                     {

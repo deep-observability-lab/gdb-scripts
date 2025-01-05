@@ -39,4 +39,12 @@ for line in lines:
         else:
             PrettyPrinter.print_error("libc.so.6 is loaded, but without debug symbols. command for memory debuging is not accessible.")
             # return None
+            DeadlockDetector()
+            ExitCommand()
         # return
+
+Heap()
+Arena()
+Bins()
+Process()
+DeadlockDetector()

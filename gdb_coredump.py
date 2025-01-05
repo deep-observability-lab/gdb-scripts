@@ -94,22 +94,20 @@ def main(argv):
     if args.workspcae is not None:
         workspace = args.workspcae
     else:
-        workspace = '/var/sysroot/'
-        print("{}Warning: Default path for WORKSPACE '/var/sysroot/' will be used.{}".format(YELLOW, RESET))
+        workspace = '~/workspace'
+        print("{}Warning: Default path for WORKSPACE '{}' will be used.{}".format(YELLOW, workspace, RESET))
 
     cnf.init(workspace=workspace, coredump=args.coredump)
 
     # setup = setup_local()
     # setup.setup_local()
     core_file_path = os.path.join( workspace,args.coredump )
-    if os.path.exists(core_file_path):
-        print(f"{core_file_path} exists.")
-    else:
-        print(f"{core_file_path} does not exist.")
+    if not os.path.exists(core_file_path):
+        print("{} does not exist at {}".format(core_file_path , workspace))
         exit()
-
+    
     run_gdb_local(args.program, port=None, pid=None, user=None,
-                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=core_file_path, ui_mood=ui_mood)
+                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump, ui_mood=ui_mood)
 
 
 if __name__ == "__main__":

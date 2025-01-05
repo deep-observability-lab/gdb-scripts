@@ -48,6 +48,8 @@ def check_port(ssh_conn, password, username):
 def extract_shared_libraries_from_core(core_dump_path):
     """Extracts shared libraries from a core dump using readelf and filters paths ending in .so."""
     try:
+        
+        
         # Run readelf to get all information, then filter for .so files
         readelf_output = subprocess.run(
             ["readelf", "-a", core_dump_path],
@@ -55,8 +57,8 @@ def extract_shared_libraries_from_core(core_dump_path):
             text=True,
             check=True
         )
-
         # Extract .so paths using regex
+        
         so_paths = []
         for line in readelf_output.stdout.splitlines():
             match = re.search(r"(/.+\.so(?:\.[\d]+)*)", line)
@@ -70,18 +72,32 @@ def extract_shared_libraries_from_core(core_dump_path):
         return {}
 
 
+def find_library_in_workspace(workspace, library_name):
+    """Search for a library in the workspace directory."""
+    for root, _, files in os.walk(workspace):
+        if library_name in files:
+            return os.path.join(root, library_name)
+        
+    return None
+
+
 def check_libraries_in_path(core_dump_path, search_path):
     """Checks how many shared libraries exist in the given path."""
     found = []
     not_found = []
-    libraries = extract_shared_libraries_from_core(core_dump_path)
-
+    libraries = extract_shared_libraries_from_core(os.path.join( cnf.WORKSPACE ,  core_dump_path ))
+    
     for lib in libraries:
-        lib_path = os.path.join(search_path, lib)
-        if os.path.exists(lib_path):
-            found.append(lib)
+        found_path = find_library_in_workspace(search_path, lib)
+        if found_path != None : 
+            found.append(os.path.dirname(found_path))
+
+        # lib_path = os.path.join(search_path, lib)
+        # if os.path.exists(lib_path):
+        #     found.append(lib)
         else:
             not_found.append(lib)
+
     result = False
     if len(not_found) > 0:
         print("Following libraries were not found in workspace.")
@@ -111,28 +127,31 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     site_package = site.getsitepackages()[0]
     solib_path = cnf.WORKSPACE
     sysroot = cnf.WORKSPACE
+    found_libs = []
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
         workspace = os.path.expanduser(cnf.WORKSPACE)
         core_file=os.path.expanduser(core_file)
         target_path = os.path.join(workspace, os.path.basename(core_file))
         #shutil.copy(core_file, target_path)
+        if len (found_libs) > 0 : 
+            solib_path = ':'.join(found_libs)
+        # src_abs = os.path.abspath(core_file)
+        # dst_abs = os.path.abspath(target_path)
 
-        src_abs = os.path.abspath(core_file)
-        dst_abs = os.path.abspath(target_path)
-
-        # Check if the source and destination are the same
-        if src_abs == dst_abs:
-            print("Source and destination are the same file. Skipping copy.")
-        else:
-            try:
-                shutil.copy(core_file, target_path)
-                print(f"Copied {core_file} to {target_path}")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+        # # Check if the source and destination are the same
+        # if src_abs == dst_abs:
+        #     print("Source and destination are the same file. Skipping copy.")
+        # else:
+        #     try:
+        #         shutil.copy(core_file, target_path)
+        #         print(f"Copied {core_file} to {target_path}")
+        #     except Exception as e:
+        #         print(f"An error occurred: {e}")
         if not cont:
             solib_path = ''
             sysroot = '/'
+        
     file_name = "gdb_commands/"
     directory = os.getcwd()
     file_path = os.path.join(directory, file_name)
@@ -147,11 +166,12 @@ dir {}
 file {}
 set pagination off
 set auto-solib-add on
-set sysroot {}
+# set sysroot {}
+set sysroot .
+core-file $core-file
 set solib-search-path {}
 info sharedlibrary
 set architecture {}
-
 python
 import sys
 import os
@@ -175,9 +195,7 @@ attach {}
 """.format(ip, port, pid)
     else:
         if ui_mood=='gdb':
-            gdb_commands = """
-            core-file {}
-            """.format(core_file) + gdb_commands
+            gdb_commands = gdb_commands.replace( "$core-file" , core_file)
     gdb_commands += "source __init__.py"
     return gdb_commands
 
@@ -200,7 +218,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         is_live=is_live,
         core_file=core_file,
         ui_mood=ui_mood, 
-        binary_path=binary_path)
+        binary_path=app)
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
@@ -216,8 +234,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
             #     'gnome-terminal -- gdb-multiarch -x {} {}'
             # ).format(cnf.WORKSPACE, binary_path)      
             gdb_command = (
-                'tmux new-session -s gdb_session "gdb-multiarch -x {} {}"'
-            ).format(gdb_script_path, binary_path)
+                'tmux new-session -s gdb_session "cd {} && gdb-multiarch -x {} {}"'     
+            ).format(cnf.WORKSPACE, gdb_script_path, binary_path)
             process = subprocess.Popen(gdb_command, shell=True)
             process.wait()
         except subprocess.SubprocessError as e:

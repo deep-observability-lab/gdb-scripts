@@ -36,13 +36,19 @@ class Heap(gdb.Command):
         self.free = None
         self.used = None
 
-    def read_memory(self, cur, num_words):
-        inferior = gdb.selected_inferior()
-        memory = inferior.read_memory(
-            cur + state_manager.word_size, num_words * 4)
-        word = memory[0:4]
-        value = int.from_bytes(word, byteorder=state_manager.byteorder)
-        return value
+    def read_memory(start_address, size):
+        try:
+            inferior = gdb.selected_inferior()
+            memory = inferior.read_memory(start_address, size)
+            return memory
+        except gdb.error:
+            print(f"Error: Cannot read memory at address {hex(start_address)}. "
+                "This could indicate memory corruption or invalid access.")
+            return None
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return None
+
 
     def count_memory_usage(self, heap_start, heap_end):
 
