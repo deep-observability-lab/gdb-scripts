@@ -151,7 +151,8 @@ class Heap(gdb.Command):
         pattern = r"0x[0-9a-fA-F]+"
         match = re.search(pattern, top_chunk)
         hex_address = match.group()
-        value = self.read_memory(int(hex_address, 16), num_words=1)
+        num_words=1
+        value = self.read_memory(int(hex_address, 16), num_words)
         sz = value & ~0x7
         main_heap.end = str(hex(int(hex_address, 16) + sz))
 
