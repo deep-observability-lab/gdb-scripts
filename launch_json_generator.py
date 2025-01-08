@@ -37,7 +37,7 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "request": "attach",
                 "program": "${{{workspaceFolder}}}{}".format(kwargs["binary_path"]),
                
-                # "stopAtEntry": False,
+                # "stopAtEntry": False, 
                 # "cwd": kwargs["workspace"],
                 "processId" : int(kwargs['process_id']),
                 "useExtendedRemote": True,
@@ -135,14 +135,13 @@ def generate_debug_config(mode, output_path, **kwargs):
             "version": version,
             "configurations": [config]
         }
-
         # Write to file
         with open(output_path , "w") as f:
             json.dump(launch_json, f, indent=4)
         print(f"launch.json written to {output_path}")
-        print("open vscode in the path <workspace>/<release>/\n .vscode/launch.json is generated.")
-        print("gdbserver is listening on remote...")
-
+        print("open vscode in the path <workspace>/\n .vscode/launch.json is generated.")
+        if kwargs['live']: 
+            print("gdbserver is listening on remote...")
 
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")

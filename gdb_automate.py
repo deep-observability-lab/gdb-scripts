@@ -91,7 +91,7 @@ def check_libraries_in_path(core_dump_path, search_path):
         found_path = find_library_in_workspace(search_path, lib)
         if found_path != None : 
             found.append(os.path.dirname(found_path))
-
+           
         # lib_path = os.path.join(search_path, lib)
         # if os.path.exists(lib_path):
         #     found.append(lib)
@@ -151,7 +151,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
         if not cont:
             solib_path = ''
             sysroot = '/'
-        
+       
     file_name = "gdb_commands/"
     directory = os.getcwd()
     file_path = os.path.join(directory, file_name)
@@ -180,7 +180,8 @@ sys.path.insert(0, "{}")
 sys.path.append("{}")
 sys.path.append("{}")
 sys.path.append("{}")
-import end_command
+from end_command import ExitCommand
+ExitCommand()
 from substitute_path import substitution
 # substitution("{}")
 end
@@ -191,6 +192,7 @@ dir {}
         gdb_commands += remote_command
         gdb_commands += """
 target extended-remote {}:{}
+
 attach {}
 """.format(ip, port, pid)
     else:
@@ -251,7 +253,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 binary_path=binary_path.strip('\n'),
                 workspace=cnf.WORKSPACE.strip('\n'),
                 gdb_script=gdb_script_path,
-                process_id=pid
+                process_id=pid , 
+                live = is_live
             )
         else:   
             generate_debug_config(
@@ -260,7 +263,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 core_path=core_file.strip('\n'),
                 binary_path=binary_path.strip('\n'),
                 workspace=cnf.WORKSPACE.strip('\n'),
-                gdb_script=gdb_script_path
+                gdb_script=gdb_script_path , 
+                live = is_live
             )
 
 

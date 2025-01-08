@@ -10,7 +10,6 @@ sys.path.insert(0, parent_dir)
 
 class ExitCommand(gdb.Command):
     def __init__(self):
-
         super(
             ExitCommand,
             self).__init__(

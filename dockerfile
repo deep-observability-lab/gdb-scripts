@@ -18,7 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gdb-multiarch \
     bash \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    gcc-powerpc-linux-gnu\
+    vim   
+
 
 # Set the Python interpreter path for GDB
 # ENV PYTHONHOME=/usr/local/lib/python3.9
