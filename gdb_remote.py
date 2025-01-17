@@ -2,7 +2,7 @@ from gdb_automate import run_gdb_local, run_gdbserver, get_program_name
 import argparse
 from setup_local import setup_local
 import config as cnf
-import sys
+import os
 # ANSI escape codes for colored text
 YELLOW = '\033[93m'
 RESET = '\033[0m'
@@ -21,7 +21,8 @@ def main(argv):
     parser.add_argument(
     '-a', '--architecture', 
     type=str, 
-    required=True, 
+    required=False,
+    default='auto', 
     choices=[
         # x86 Family
         'i386', 'i386:x86-64', 'i386:x86-64:intel', 'i386:x86-64:32', 
@@ -85,6 +86,7 @@ def main(argv):
     ))
 
     parser.add_argument('-w', '--workspcae', type=str,
+                        default="/work" ,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
     parser.add_argument('-p', '--port', type=int,
                         help='Port to set the DEFAULT_PORT. If not specified, gdb use port: 1234.')
@@ -97,11 +99,21 @@ def main(argv):
     workspace = None
     gdb_port = None
     password = None
+    environment = ''
+    workspace = None
+    if os.path.exists('/.dockerenv') and args.user_interface == 'vscode':
+        environment = args.workspace
+    elif os.path.exists('/.dockerenv') and args.user_interface == 'gdb' : 
+        environment = ''
+        workspace = '/work'
+
+    ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
     if args.workspcae is not None:
         workspace = args.workspcae
-    else:
-        workspace = '/var/sysroot/'
-        print("{}Warning: Default path for WORKSPACE '/var/sysroot/' will be used.{}".format(YELLOW, RESET))
+    elif os.path.exists('/.dockerenv') == False :  
+        workspace = '/work'
+        print("{}Warning: Default path for WORKSPACE '{}' will be used.{}".format(YELLOW, workspace, RESET))
+    
 
     if password is None:
         password = getpass.getpass(prompt="Enter password for remtoe target :")
@@ -109,7 +121,7 @@ def main(argv):
     if args.port is not None:
         gdb_port = args.port
     ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
-    cnf.init(workspace=workspace, default_port=gdb_port)
+    cnf.init(workspace=workspace, default_port=gdb_port , environment = environment)
 
     setup = setup_local()
 

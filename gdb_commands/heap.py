@@ -36,11 +36,13 @@ class Heap(gdb.Command):
         self.free = None
         self.used = None
 
-    def read_memory(start_address, size):
+    def read_memory(self , start_address, size):
         try:
             inferior = gdb.selected_inferior()
             memory = inferior.read_memory(start_address, size)
-            return memory
+            print( "this is memory  : " , memory )
+            value_as_int = int.from_bytes(memory, byteorder=state_manager.byteorder)
+            return value_as_int
         except gdb.error:
             print(f"Error: Cannot read memory at address {hex(start_address)}. "
                 "This could indicate memory corruption or invalid access.")
@@ -69,18 +71,42 @@ class Heap(gdb.Command):
         cur = heap_start & ~(alignment - 1)
         if cur < heap_start:
             cur += alignment
-
+        print("hex of : " , hex( cur ))
         nxhdr = 0
         while (cur != heap_end):
             num_words = 1
+            print("hex of : " , hex( cur ))
             value = self.read_memory(cur, num_words)
             sz = value & ~0x7
-
+            print("this is value : " , value  , " and size : ,", sz )
             nxhdr = cur + sz
             if nxhdr == heap_end:
                 break
 
             value = self.read_memory(nxhdr, num_words)
+            print( "next and value of it : " , nxhdr , value )
+            pbit = (value & 0x1)
+            cur = nxhdr
+
+            if pbit == 1:
+                allocated += sz
+
+        while (cur != heap_end):
+            num_words = 1
+            
+            #value = self.read_memory(cur, num_words)
+            #sz = value & ~0x7
+        
+            value = self.read_memory( cur , num_words)
+             
+            sz = value & ~0x7
+            nxhdr = cur + sz
+            if nxhdr == heap_end:
+                break
+
+            value = self.read_memory(nxhdr, num_words)
+             
+            sz = value & ~0x7
             pbit = (value & 0x1)
             cur = nxhdr
 
@@ -152,7 +178,8 @@ class Heap(gdb.Command):
         match = re.search(pattern, top_chunk)
         hex_address = match.group()
         num_words=1
-        value = self.read_memory(int(hex_address, 16), num_words)
+        value = self.read_memory( int(hex_address, 16) , num_words)
+        
         sz = value & ~0x7
         main_heap.end = str(hex(int(hex_address, 16) + sz))
 
@@ -169,16 +196,16 @@ class Heap(gdb.Command):
         state_manager.heaps = []
         state_manager.arena2heaps = {}
         self.extract_heaps()
-
         cnt = 0
 
         PrettyPrinter.print_header(
             "analysis thread's heaps", width=table_width)
         for ar in state_manager.arenas:
             if len(state_manager.arena2heaps[ar]) > 0:
-                for heap_indx in state_manager.arena2heaps[ar]:
+                for heap_indx in state_manager.arena2heaps[ar]:     
 
                     tmp_heap = state_manager.heaps[heap_indx]
+                    print("thsi is heap start " , tmp_heap) 
                     end = int(tmp_heap.end, 16)
                     start = int(tmp_heap.offset, 16)
                     print(
@@ -217,6 +244,6 @@ class Heap(gdb.Command):
 
                     cnt += 1
 
-                    self.count_memory_usage(start, end)
+                    #self.count_memory_usage(start, end)
 
         PrettyPrinter.print_footer(100)

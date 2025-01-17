@@ -48,8 +48,6 @@ def check_port(ssh_conn, password, username):
 def extract_shared_libraries_from_core(core_dump_path):
     """Extracts shared libraries from a core dump using readelf and filters paths ending in .so."""
     try:
-        
-        
         # Run readelf to get all information, then filter for .so files
         readelf_output = subprocess.run(
             ["readelf", "-a", core_dump_path],
@@ -83,21 +81,22 @@ def find_library_in_workspace(workspace, library_name):
 
 def check_libraries_in_path(core_dump_path, search_path):
     """Checks how many shared libraries exist in the given path."""
-    found = []
+    found = set()
+    
     not_found = []
     libraries = extract_shared_libraries_from_core(os.path.join( cnf.WORKSPACE ,  core_dump_path ))
     
     for lib in libraries:
         found_path = find_library_in_workspace(search_path, lib)
         if found_path != None : 
-            found.append(os.path.dirname(found_path))
-           
+            found.add(os.path.dirname(found_path))
+                   
         # lib_path = os.path.join(search_path, lib)
         # if os.path.exists(lib_path):
         #     found.append(lib)
         else:
             not_found.append(lib)
-
+        
     result = False
     if len(not_found) > 0:
         print("Following libraries were not found in workspace.")
@@ -162,6 +161,7 @@ set environment USERNAME={}
 set environment PASSWORD={}
 """.format(ip, user, pwd)
     gdb_commands = """
+set python print-stack full
 dir {}
 file {}
 set pagination off
@@ -188,17 +188,22 @@ end
 dir {}
 """.format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
            directory, site_package ,gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path) 
+        
     if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
 target extended-remote {}:{}
-
 attach {}
 """.format(ip, port, pid)
     else:
         if ui_mood=='gdb':
             gdb_commands = gdb_commands.replace( "$core-file" , core_file)
+        else : 
+            gdb_commands = gdb_commands.replace( "$core-file" , '')
+            gdb_commands = gdb_commands.replace( "core-file" , '')
     gdb_commands += "source __init__.py"
+    if cnf.ENV != '' : 
+        gdb_commands = gdb_commands.replace(cnf.WORKSPACE , cnf.ENV )   
     return gdb_commands
 
 
@@ -220,7 +225,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         is_live=is_live,
         core_file=core_file,
         ui_mood=ui_mood, 
-        binary_path=app)
+        binary_path=binary_path)
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
@@ -228,7 +233,8 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         tmp_file.close()
         shutil.copy( tmp_file.name , cnf.WORKSPACE)
         print(f"gdb script file copied to {cnf.WORKSPACE}")
-    gdb_script_path = cnf.WORKSPACE + '/' + str(tmp_file.name).split('/')[-1]
+#cnf.WORKSPACE + '/' +
+    gdb_script_path =  str(tmp_file.name).split('/')[-1]
    
     if ui_mood == 'gdb' : 
         try:       
@@ -244,13 +250,19 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
             print("Error starting gdb: {}".format(e))
 
     if ui_mood == 'vscode' :
+        binary_relative_path = ''
+        try : 
+            binary_relative_path = (binary_path.strip('\n')).split( cnf.WORKSPACE.strip('\n') )[1]    
+        except :
+            print("there is problem with path of binary file ")
+            exit()     
         if is_live :  
             generate_debug_config(
                 mode= 'live' ,
                 output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 ip=ip,
                 port=port,
-                binary_path=binary_path.strip('\n'),
+                binary_path= '/'+binary_relative_path,
                 workspace=cnf.WORKSPACE.strip('\n'),
                 gdb_script=gdb_script_path,
                 process_id=pid , 
@@ -261,7 +273,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
                 mode="coredump",
                 output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 core_path=core_file.strip('\n'),
-                binary_path=binary_path.strip('\n'),
+                binary_path='/'+binary_relative_path,
                 workspace=cnf.WORKSPACE.strip('\n'),
                 gdb_script=gdb_script_path , 
                 live = is_live
