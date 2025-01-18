@@ -83,7 +83,7 @@ def check_libraries_in_path(core_dump_path, search_path):
     """Checks how many shared libraries exist in the given path."""
     found = set()
     
-    not_found = []
+    not_found = set()
     libraries = extract_shared_libraries_from_core(os.path.join( cnf.WORKSPACE ,  core_dump_path ))
     
     for lib in libraries:
@@ -95,7 +95,7 @@ def check_libraries_in_path(core_dump_path, search_path):
         # if os.path.exists(lib_path):
         #     found.append(lib)
         else:
-            not_found.append(lib)
+            not_found.add(lib)
         
     result = False
     if len(not_found) > 0:
@@ -204,6 +204,9 @@ attach {}
     gdb_commands += "source __init__.py"
     if cnf.ENV != '' : 
         gdb_commands = gdb_commands.replace(cnf.WORKSPACE , cnf.ENV )   
+        host_path = os.environ.get("HOST_PATH")
+        if host_path : 
+            gdb_commands = gdb_commands.replace('/app' , host_path )   
     return gdb_commands
 
 
