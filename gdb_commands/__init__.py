@@ -1,15 +1,10 @@
-from end_command import ExitCommand
-from deadlock import DeadlockDetector
-from process import Process
-from bins import Bins
-from arena import Arena
-from heap import Heap
+from gdb_commands.deadlock import DeadlockDetector
+from gdb_commands.process import Process
+from gdb_commands.bins import Bins
+from gdb_commands.arena import Arena
+from gdb_commands.heap import Heap
+#from gdb_commands.end_command import ExitCommand
 import gdb
-import importlib
-import sys
-import os
-from pretty_print import PrettyPrinter
-
 
 gdb.execute('info sharedlibrary')
 output = gdb.execute('info sharedlibrary', to_string=True)
@@ -46,4 +41,5 @@ Arena()
 Bins()
 DeadlockDetector()
 Heap()
-ExitCommand()
+
+#ExitCommand()

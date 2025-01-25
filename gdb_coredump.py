@@ -81,7 +81,7 @@ def main(argv):
                         help='name of coredump file which should be located on workspace path.')
     parser.add_argument('-p', '--program', type=str, required=True, 
                         help='name of the binary program you wish to debug.')
-    parser.add_argument('-w', '--workspace', type=str,
+    parser.add_argument('-w', '--workspcae', type=str,
                         default="/work" ,
                         help='Directory where you should put all the shared-binaries/app-binary and source codes.')
     parser.add_argument('-ui', '--user_interface', type=str,
@@ -92,17 +92,18 @@ def main(argv):
     
     args = parser.parse_args()
     environment = ''
-    workspace = args.workspace
+    workspace = None
     
     ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
-   
-    if workspace== None and os.path.exists('/.dockerenv') == False : 
+    if args.workspcae is not None:
+        workspace = args.workspcae
+    elif os.path.exists('/.dockerenv') == False : 
+
         workspace = '/work'
         print("{}Warning: Default path for WORKSPACE '{}' will be used.{}".format(YELLOW, workspace, RESET))
     
     if os.path.exists('/.dockerenv') and args.user_interface == 'vscode':
-        environment = workspace
-        workspace = '/work'
+        environment = args.workspace
     elif os.path.exists('/.dockerenv') and args.user_interface == 'gdb' : 
         environment = ''
         workspace = '/work'
@@ -111,15 +112,13 @@ def main(argv):
 
     # setup = setup_local()
     # setup.setup_local()
-    core_file_path = os.path.join( workspace,args.coredump ).strip()
-    
-    if (not os.path.exists(core_file_path) ) and ( not os.path.exists( os.path.join('/work' , args.coredump)) ) :
-        print("{} does not exist at {}".format(args.coredump , args.workspace))
+    core_file_path = os.path.join( workspace,args.coredump )
+    if not os.path.exists(core_file_path):
+        print("{} does not exist at {}".format(core_file_path , workspace))
         exit()
     
     run_gdb_local(args.program, port=None, pid=None, user=None,
-                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump, 
-                  ui_mood=ui_mood)
+                  pwd=None, ip=None, arch=args.architecture, is_live=False, core_file=args.coredump, ui_mood=ui_mood)
 
 
 if __name__ == "__main__":

@@ -101,11 +101,6 @@ def main(argv):
     password = None
     environment = ''
     workspace = None
-    if os.path.exists('/.dockerenv') and args.user_interface == 'vscode':
-        environment = args.workspace
-    elif os.path.exists('/.dockerenv') and args.user_interface == 'gdb' : 
-        environment = ''
-        workspace = '/work'
 
     ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
     if args.workspcae is not None:
@@ -113,6 +108,12 @@ def main(argv):
     elif os.path.exists('/.dockerenv') == False :  
         workspace = '/work'
         print("{}Warning: Default path for WORKSPACE '{}' will be used.{}".format(YELLOW, workspace, RESET))
+
+    if os.path.exists('/.dockerenv') and args.user_interface == 'vscode':
+        environment = args.workspace
+    elif os.path.exists('/.dockerenv') and args.user_interface == 'gdb' : 
+        environment = ''
+        workspace = '/work'
     
 
     if password is None:
@@ -120,7 +121,7 @@ def main(argv):
 
     if args.port is not None:
         gdb_port = args.port
-    ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
+    
     cnf.init(workspace=workspace, default_port=gdb_port , environment = environment)
 
     setup = setup_local()

@@ -126,6 +126,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     site_package = site.getsitepackages()[0]
     solib_path = cnf.WORKSPACE
     sysroot = cnf.WORKSPACE
+    cont = False
     found_libs = []
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
@@ -188,7 +189,8 @@ end
 dir {}
 """.format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
            directory, site_package ,gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path) 
-        
+    if not cont:
+        gdb_commands = gdb_commands.replace( 'set sysroot .' , 'set sysroot /')    
     if is_live and ui_mood=='gdb':
         gdb_commands += remote_command
         gdb_commands += """
@@ -245,7 +247,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
             #     'gnome-terminal -- gdb-multiarch -x {} {}'
             # ).format(cnf.WORKSPACE, binary_path)      
             gdb_command = (
-                'tmux new-session -s gdb_session "cd {} && gdb-multiarch -x {} {}"'     
+                'tmux new-session "cd {} && gdb-multiarch -x {} {}"'     
             ).format(cnf.WORKSPACE, gdb_script_path, binary_path)
             process = subprocess.Popen(gdb_command, shell=True)
             process.wait()
