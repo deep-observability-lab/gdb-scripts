@@ -109,7 +109,6 @@ def main(argv):
         '-s',
         '--source',
         type=str,
-        default="/src",
         required=False,
         help='Directory where you should put all the source codes (seperated from binaries and libs).')
 
