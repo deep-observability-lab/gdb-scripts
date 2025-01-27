@@ -23,7 +23,8 @@ class Bins(gdb.Command):
     def walk_doubled_link_bin_at(self, index, name, bin_head):
         if bin_head == 0:
             return
-        cur = str(bin_head).split()[0]
+        head = str(bin_head).split()[0]
+        cur = head
         bin_head = cur
         pre = cur
         num_chunks = 0
@@ -36,12 +37,12 @@ class Bins(gdb.Command):
 
             if fd == bin_head:
                 break
-            num_chunks += 1
             if bk != pre:
                 PrettyPrinter.print_error(
-                    "corruption at {} bin with index: {}".format(
-                        name, index))
-                exit(1)
+                    "corruption at {} bin with index: {} with head ptr: {} at chunk {}\nprevious chunck is {}".format(
+                        name, index, head, cur, pre))
+                return
+            num_chunks += 1
             pre = cur
             cur = fd
 

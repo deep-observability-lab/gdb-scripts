@@ -1,40 +1,40 @@
 # FROM python:3.9-slim
-FROM ubuntu:20.04
+FROM ubuntu: 20.04
 # Switch to root user to install packages
 USER root
 
 # Update and install dependencies using apt
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-dev \
-    python3-venv \
+RUN apt - get update & & apt - get install - y - -no - install - recommends \
+    python3 - dev \
+    python3 - venv \
     python3\
-    python3-distutils\
-    python3-pip\
+    python3 - distutils\
+    python3 - pip\
     gdb \
     binutils \
     tmux \
     sudo \
     git \
-    gdb-multiarch \
+    gdb - multiarch \
     bash \
-    gcc-powerpc-linux-gnu\
+    gcc - powerpc - linux - gnu\
     vim \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* 
+    & & apt - get clean \
+    & & rm - rf / var / lib / apt / lists / *
 
-WORKDIR /app
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+WORKDIR / app
+COPY requirements.txt / app/
+RUN pip install - r requirements.txt
 
 # Copy all files and directories from the current context to the image
-COPY . /app/
+COPY . / app/
 ARG HOST_PATH
 
-ENV HOST_PATH=${HOST_PATH}
+ENV HOST_PATH =${HOST_PATH}
 
 USER root
-RUN chmod +x /app/*.py
-RUN chmod +x /app/*.sh
+RUN chmod + x / app / *.py
+RUN chmod + x / app / *.sh
 
 # Set the default entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT["/app/entrypoint.sh"]

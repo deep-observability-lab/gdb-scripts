@@ -33,7 +33,7 @@ class GlobalState:
         # Initialize HEAPINFO_SIZE
         try:
             heap_info_type = gdb.lookup_type('heap_info')
-            self.HEAPINFO_SIZE =  heap_info_type.sizeof 
+            self.HEAPINFO_SIZE = heap_info_type.sizeof
         except gdb.error as e:
             print(f"Error initializing HEAPINFO_SIZE: {e}")
             self.HEAPINFO_SIZE = None  # Set a default value or handle as needed

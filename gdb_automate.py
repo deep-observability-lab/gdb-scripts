@@ -23,6 +23,7 @@ import re
 from launch_json_generator import generate_debug_config
 import shutil
 
+
 def check_port(ssh_conn, password, username):
     """Check available ports for gdbserver."""
     ssh_conn.connect()
@@ -56,7 +57,7 @@ def extract_shared_libraries_from_core(core_dump_path):
             check=True
         )
         # Extract .so paths using regex
-        
+
         so_paths = []
         for line in readelf_output.stdout.splitlines():
             match = re.search(r"(/.+\.so(?:\.[\d]+)*)", line)
@@ -75,36 +76,38 @@ def find_library_in_workspace(workspace, library_name):
     for root, _, files in os.walk(workspace):
         if library_name in files:
             return os.path.join(root, library_name)
-        
+
     return None
 
 
 def check_libraries_in_path(core_dump_path, search_path):
     """Checks how many shared libraries exist in the given path."""
     found = set()
-    
+
     not_found = set()
-    libraries = extract_shared_libraries_from_core(os.path.join( cnf.WORKSPACE ,  core_dump_path ))
-    
+    libraries = extract_shared_libraries_from_core(
+        os.path.join(cnf.WORKSPACE, core_dump_path))
+
     for lib in libraries:
         found_path = find_library_in_workspace(search_path, lib)
-        if found_path != None : 
+        if found_path is not None:
             found.add(os.path.dirname(found_path))
-                   
+
         # lib_path = os.path.join(search_path, lib)
         # if os.path.exists(lib_path):
         #     found.append(lib)
         else:
             not_found.add(lib)
-        
+
     result = False
     if len(not_found) > 0:
         print("Following libraries were not found in workspace.")
         for lib in not_found:
             print("  - {}".format(lib))
-        cont = input("[1] Continue with whatever libraries found in workspace.\n"
-                     "[2] use libraries in default path in local system: /lib /usr/lib /lib64 /usr/lib64\n"
-                     "[3] exit program.\n")
+        cont = input(
+            "[1] Continue with whatever libraries found in workspace.\n"
+            "[2] use libraries in default path in local system: /lib /usr/lib /lib64 /usr/lib64\n"
+            "[3] exit program.\n")
         if cont == "3":
             print("Exit.")
             exit(0)  # Exit with success code
@@ -120,8 +123,8 @@ def check_libraries_in_path(core_dump_path, search_path):
     return found, result
 
 
-def create_gdbcommand(arch, user, pwd, ip, port, pid,
-                      binary_path ,is_live=True, core_file=None,ui_mood='gdb'):
+def create_gdbcommand(arch, user, pwd, ip, port, pid, binary_path,
+                      is_live=True, core_file=None, ui_mood='gdb'):
     python_path = sys.executable
     site_package = site.getsitepackages()[0]
     solib_path = cnf.WORKSPACE
@@ -131,10 +134,10 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
     if not is_live:
         found_libs, cont = check_libraries_in_path(core_file, cnf.WORKSPACE)
         workspace = os.path.expanduser(cnf.WORKSPACE)
-        core_file=os.path.expanduser(core_file)
+        core_file = os.path.expanduser(core_file)
         target_path = os.path.join(workspace, os.path.basename(core_file))
         #shutil.copy(core_file, target_path)
-        if len (found_libs) > 0 : 
+        if len(found_libs) > 0:
             solib_path = ':'.join(found_libs)
         # src_abs = os.path.abspath(core_file)
         # dst_abs = os.path.abspath(target_path)
@@ -151,7 +154,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid,
         if not cont:
             solib_path = ''
             sysroot = '/'
-       
+
     file_name = "gdb_commands/"
     directory = os.getcwd()
     file_path = os.path.join(directory, file_name)
@@ -168,7 +171,7 @@ file {}
 set pagination off
 set auto-solib-add on
 # set sysroot {}
-set sysroot .
+#set sysroot .
 core-file $core-file
 set solib-search-path {}
 info sharedlibrary
@@ -183,43 +186,57 @@ sys.path.append("{}")
 sys.path.append("{}")
 from end_command import ExitCommand
 ExitCommand()
-from substitute_path import substitution
 # substitution("{}")
 end
 dir {}
-""".format(cnf.WORKSPACE, binary_path, sysroot, solib_path, arch, python_path, site_package, 
-           directory, site_package ,gdb_commands_absolute_path, cnf.WORKSPACE, gdb_commands_absolute_path) 
+""".format(
+        cnf.WORKSPACE,
+        binary_path,
+        sysroot,
+        solib_path,
+        arch,
+        python_path,
+        site_package,
+        directory,
+        site_package,
+        gdb_commands_absolute_path,
+        cnf.WORKSPACE,
+        gdb_commands_absolute_path)
     if not cont:
-        gdb_commands = gdb_commands.replace( 'set sysroot .' , 'set sysroot /')    
-    if is_live and ui_mood=='gdb':
+        gdb_commands = gdb_commands.replace('set sysroot .', 'set sysroot /')
+    if is_live and ui_mood == 'gdb':
         gdb_commands += remote_command
         gdb_commands += """
 target extended-remote {}:{}
 attach {}
 """.format(ip, port, pid)
     else:
-        if ui_mood=='gdb':
-            gdb_commands = gdb_commands.replace( "$core-file" , core_file)
-        else : 
-            gdb_commands = gdb_commands.replace( "$core-file" , '')
-            gdb_commands = gdb_commands.replace( "core-file" , '')
-    gdb_commands += "source __init__.py"
-    if cnf.ENV != '' : 
-        gdb_commands = gdb_commands.replace(cnf.WORKSPACE , cnf.ENV )   
+        if ui_mood == 'gdb':
+            gdb_commands = gdb_commands.replace("$core-file", core_file)
+        else:
+            gdb_commands = gdb_commands.replace("$core-file", '')
+            gdb_commands = gdb_commands.replace("core-file", '')
+    gdb_commands += "source __init__.py\n"
+    if cnf.SRC_ENV != '' and cnf.SRC_ENV is not None:
+        # gdb_commands += "\ndir {}\n".format(cnf.SRC_ENV)
+        gdb_commands += "add_child_dirs {}\n".format(cnf.SRC_ENV)
+    if cnf.ENV != '':  # in docker containe
+        gdb_commands = gdb_commands.replace(cnf.WORKSPACE, cnf.ENV)
         host_path = os.environ.get("HOST_PATH")
-        if host_path : 
-            gdb_commands = gdb_commands.replace('/app' , host_path )   
+        if host_path:
+            gdb_commands = gdb_commands.replace('/app', host_path)
+
     return gdb_commands
 
 
-def run_gdb_local(app, ip, port, pid, user, pwd,
-                  arch="auto", is_live=True, core_file=None,ui_mood='gdb'):
+def run_gdb_local(app, ip, port, pid, user, pwd, source=None,
+                  arch="auto", is_live=True, core_file=None, ui_mood='gdb'):
     """Run gdb locally with specified parameters."""
     if arch is None:
         arch = "auto"
-   
+
     binary_path = os.path.join(cnf.WORKSPACE, app)
-   
+
     gdb_commands = create_gdbcommand(
         arch,
         user,
@@ -229,59 +246,61 @@ def run_gdb_local(app, ip, port, pid, user, pwd,
         pid,
         is_live=is_live,
         core_file=core_file,
-        ui_mood=ui_mood, 
+        ui_mood=ui_mood,
         binary_path=binary_path)
     # Create a temporary file for the GDB commands
     with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.gdb') as tmp_file:
         tmp_file.write(gdb_commands)
-        os.chmod(str(tmp_file.name ), 0o777)
+        os.chmod(str(tmp_file.name), 0o777)
         tmp_file.close()
-        shutil.copy( tmp_file.name , cnf.WORKSPACE)
+        shutil.copy(tmp_file.name, cnf.WORKSPACE)
         print(f"gdb script file copied to {cnf.WORKSPACE}")
-#cnf.WORKSPACE + '/' +
-    gdb_script_path =  str(tmp_file.name).split('/')[-1]
-   
-    if ui_mood == 'gdb' : 
-        try:       
+# cnf.WORKSPACE + '/' +
+    gdb_script_path = str(tmp_file.name).split('/')[-1]
+
+    if ui_mood == 'gdb':
+        try:
             # gdb_command = (
             #     'gnome-terminal -- gdb-multiarch -x {} {}'
-            # ).format(cnf.WORKSPACE, binary_path)      
+            # ).format(cnf.WORKSPACE, binary_path)
             gdb_command = (
-                'tmux new-session "cd {} && gdb-multiarch -x {} {}"'     
+                'tmux new-session "cd {} && gdb-multiarch -x {} {}"'
             ).format(cnf.WORKSPACE, gdb_script_path, binary_path)
             process = subprocess.Popen(gdb_command, shell=True)
             process.wait()
         except subprocess.SubprocessError as e:
             print("Error starting gdb: {}".format(e))
 
-    if ui_mood == 'vscode' :
+    if ui_mood == 'vscode':
         binary_relative_path = ''
-        try : 
-            binary_relative_path = (binary_path.strip('\n')).split( cnf.WORKSPACE.strip('\n') )[1]    
-        except :
+        try:
+            binary_relative_path = (
+                binary_path.strip('\n')).split(
+                cnf.WORKSPACE.strip('\n'))[1]
+        except BaseException:
             print("there is problem with path of binary file ")
-            exit()     
-        if is_live :  
+            exit()
+        if is_live:
             generate_debug_config(
-                mode= 'live' ,
+                mode='live',
                 output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 ip=ip,
                 port=port,
-                binary_path= '/'+binary_relative_path,
+                binary_path='/' + binary_relative_path,
                 workspace=cnf.WORKSPACE.strip('\n'),
                 gdb_script=gdb_script_path,
-                process_id=pid , 
-                live = is_live
+                process_id=pid,
+                live=is_live
             )
-        else:   
+        else:
             generate_debug_config(
                 mode="coredump",
                 output_path="{}/.vscode/launch.json".format(cnf.WORKSPACE),
                 core_path=core_file.strip('\n'),
-                binary_path='/'+binary_relative_path,
+                binary_path='/' + binary_relative_path,
                 workspace=cnf.WORKSPACE.strip('\n'),
-                gdb_script=gdb_script_path , 
-                live = is_live
+                gdb_script=gdb_script_path,
+                live=is_live
             )
 
 

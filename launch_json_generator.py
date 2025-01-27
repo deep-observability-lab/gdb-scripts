@@ -36,55 +36,55 @@ def generate_debug_config(mode, output_path, **kwargs):
                 "type": "cppdbg",
                 "request": "attach",
                 "program": "${{workspaceFolder}}/{}".format(kwargs["binary_path"]),
-               
-                # "stopAtEntry": False, 
+
+                # "stopAtEntry": False,
                 # "cwd": kwargs["workspace"],
-                "processId" : int(kwargs['process_id']),
+                "processId": int(kwargs['process_id']),
                 "useExtendedRemote": True,
                 "MIMode": "gdb",
                 "miDebuggerPath": "/usr/bin/gdb-multiarch",
                 "miDebuggerServerAddress": f"{kwargs['ip']}:{kwargs['port']}",
                 "setupCommands": [
                     {
-                      "description": "Enable pretty-printing for gdb",
-                      "text": "-enable-pretty-printing",
-                       "ignoreFailures": False
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": False
                     },
                     {
                         "description": "set gdb architecture to destination architecture.",
                         "text": f"set architecture {kwargs['arch']}",
-                         "ignoreFailures": False
+                        "ignoreFailures": False
                     },
                     {
                         "description": "Enable extended remote mode",
                         "text": f"target extended-remote {kwargs['ip']}:{kwargs['port']}",
-                         "ignoreFailures": False
-                    },       
+                        "ignoreFailures": False
+                    },
                     {
                         "description": "Enable Non-Stop Mode",
                         "text": "set non-stop on",
-                         "ignoreFailures": False
+                        "ignoreFailures": False
                     },
                     {
                         "description": "Enable Target Async",
                         "text": "set target-async on",
-                         "ignoreFailures": False
+                        "ignoreFailures": False
                     },
                     {
                         "description": "List threads",
                         "text": "info threads",
-                         "ignoreFailures": False
+                        "ignoreFailures": False
                     },
                     {
                         "description": "Ignore SIGALRM signal",
                         "text": "handle SIGALRM nostop noprint",
-                         "ignoreFailures": False
+                        "ignoreFailures": False
                     },
                     {
                         "description": "Ignore SIGSTOP signal",
                         "text": "handle SIGSTOP nostop noprint",
-                         "ignoreFailures": False
-                    }, 
+                        "ignoreFailures": False
+                    },
                     {
                         "description": "load gdb commands",
                         "text": "source ${{workspaceFolder}}/{}".format(kwargs['gdb_script']),
@@ -98,35 +98,25 @@ def generate_debug_config(mode, output_path, **kwargs):
                 }
             }
         elif mode == "coredump":
-            config = {
-                "name": "Debug Core Dump",
-                "type": "cppdbg",
-                "request": "launch",
-                "program": "${{workspaceFolder}}/{}".format(kwargs["binary_path"]),
-                "coreDumpPath": "${{workspaceFolder}}/{}".format(kwargs["core_path"]),
-                "stopAtEntry": True,
-                "cwd": "${{workspaceFolder}}".format(),
-                "MIMode": "gdb",
-                "miDebuggerPath": "/usr/bin/gdb-multiarch",
-                "setupCommands": [
-                    {
-                        "description": "Load GDB script",
-                        "text": "source ${{workspaceFolder}}/{}".format(kwargs['gdb_script']),
-                        "ignoreFailures": False
-                    },
-                    {
-                      "description": "Enable pretty-printing for gdb",
-                      "text": "-enable-pretty-printing",
-                      "ignoreFailures": False
-                    }
-                ],
-                "logging": {
-                    "engineLogging": False,
-                    "trace": False,
-                    "traceResponse": False
-                },
-                "externalConsole": False
-            }
+            config = {"name": "Debug Core Dump",
+                      "type": "cppdbg",
+                      "request": "launch",
+                      "program": "${{workspaceFolder}}/{}".format(kwargs["binary_path"]),
+                      "coreDumpPath": "${{workspaceFolder}}/{}".format(kwargs["core_path"]),
+                      "stopAtEntry": True,
+                      "cwd": "${{workspaceFolder}}".format(),
+                      "MIMode": "gdb",
+                      "miDebuggerPath": "/usr/bin/gdb-multiarch",
+                      "setupCommands": [{"description": "Load GDB script",
+                                         "text": "source ${{workspaceFolder}}/{}".format(kwargs['gdb_script']),
+                                         "ignoreFailures": False},
+                                        {"description": "Enable pretty-printing for gdb",
+                                         "text": "-enable-pretty-printing",
+                                         "ignoreFailures": False}],
+                      "logging": {"engineLogging": False,
+                                  "trace": False,
+                                  "traceResponse": False},
+                      "externalConsole": False}
         else:
             raise ValueError("Invalid mode. Use 'live' or 'coredump'.")
 
@@ -136,11 +126,11 @@ def generate_debug_config(mode, output_path, **kwargs):
             "configurations": [config]
         }
         # Write to file
-        with open(output_path , "w") as f:
+        with open(output_path, "w") as f:
             json.dump(launch_json, f, indent=4)
         print(f"launch.json written to {output_path}")
         print("open vscode in the path <workspace>/\n .vscode/launch.json is generated.")
-        if kwargs['live']: 
+        if kwargs['live']:
             print("gdbserver is listening on remote...")
 
     except FileNotFoundError as e:
