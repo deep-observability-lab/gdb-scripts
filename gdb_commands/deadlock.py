@@ -1,5 +1,5 @@
 import gdb
-from pretty_print import PrettyPrinter
+from gdb_commands.pretty_print import PrettyPrinter
 
 label_color = PrettyPrinter.LABEL_COLOR
 reset_color = PrettyPrinter.RESET_COLOR
@@ -88,8 +88,7 @@ class DeadlockDetector(gdb.Command):
                     status = "Waiting"
                     PrettyPrinter.print_half_header(
                         "Thread {} is waiting for Thread {} - Status: {}".format(
-                            tid, waiting_tid, status),
-                        color=PrettyPrinter.YELLOW_COLOR)
+                            tid, waiting_tid, status), color=PrettyPrinter.YELLOW_COLOR)
 
         if deadlocked_pairs:
             PrettyPrinter.print_header(

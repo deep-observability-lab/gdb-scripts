@@ -7,7 +7,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Determine the script to run based on the first argument
-echo "this is innnn $1" 
+
 case "$1" in
     gdb_remote)
         echo "Running gdb_remote.py..."
