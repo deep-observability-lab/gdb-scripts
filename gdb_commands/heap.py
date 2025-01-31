@@ -186,7 +186,7 @@ class Heap(gdb.Command):
         main_heap.ar_add = state_manager.arenas[0]
         main_heap.is_main = True
         shift = self.test_offset_for_main_heap(int(main_heap.start, 16))
-        print("this is shif ", shift)
+        
         main_heap.offset = str(hex(int(main_heap.start, 16) + shift))
         state_manager.arena2heaps[main_heap.ar_add] = [0]
         state_manager.heaps.append(main_heap)

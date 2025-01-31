@@ -4,7 +4,8 @@ from gdb_commands.bins import Bins
 from gdb_commands.arena import Arena
 from gdb_commands.heap import Heap
 from gdb_commands.add_source_path import AddChildDirectories
-#from gdb_commands.end_command import ExitCommand
+from gdb_commands.search_pattern import SearchPatternCommand
+
 import gdb
 
 gdb.execute('info sharedlibrary')
@@ -23,7 +24,7 @@ lines = output.splitlines()
 
 #             # Reload modules if already imported
 #             module_names = list(sys.modules.keys())
-#             for module_name in module_names:
+#             for module_nam40140019e in module_names:
 #                 if module_name in ['heap', 'arena', 'bins', 'process' , 'DeadlockDetector']:
 #                     importlib.reload(sys.modules[module_name])
 #             Process()
@@ -43,5 +44,6 @@ Bins()
 DeadlockDetector()
 Heap()
 AddChildDirectories()
+SearchPatternCommand()
 
 # ExitCommand()
