@@ -21,7 +21,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdb-scripts:latest .
+          docker build --build-arg HOST_PATH=/var/gdb-scripts -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdb-scripts:latest .
 
       - name: Push Docker Image to Docker Hub
         run: |
