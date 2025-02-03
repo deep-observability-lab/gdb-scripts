@@ -151,7 +151,6 @@ def main(argv):
             if src_env != ''and src_env is not None:
                 src_env = '/src'
 
-
     if password is None:
         password = getpass.getpass(prompt="Enter password for remtoe target :")
 
