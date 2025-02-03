@@ -2,7 +2,7 @@
 =======
 
 ## gdb-scripts
-A set of gdb scripts for heap, stack, and other troubleshooting purposes.
+1This repository contains custom GDB commands to enhance debugging capabilities, particularly for heap analysis, process inspection, and deadlock detection.
 This repository contains:
 - Remote Debugging Automation Tool
 
@@ -21,7 +21,7 @@ This tool simplifies remote debugging by automating essential steps required to 
 - [Coredump Debugging](#coredump-debugging)
 - [User Interface (`-ui` flag)](#user-interface-ui-flag)
 - [Running in Dockerized Mode](#running-in-dockerized-mode)
-
+- [GDB Custom Commands](#gdb-custom-commands)
 ---
 
 ## Features
@@ -36,7 +36,6 @@ This tool simplifies remote debugging by automating essential steps required to 
 - `gdb-multiarch`
 - `tmux`
 - Required Python packages (installed automatically)
-
 ---
 
 ## Installation
@@ -49,7 +48,6 @@ This tool simplifies remote debugging by automating essential steps required to 
    ```bash
    sudo pip3 install -r requirements.txt
    ```
-
 ---
 
 ## Usage
@@ -158,6 +156,12 @@ docker build --build-arg HOST_PATH=/path/to/repo/gdb-scripts -t gdb-scripts .
 ```
 
 This will create a Docker image with the necessary dependencies.
+If you want to use the provided image in Dockerhub at `docker pull 33zahra/gdb-scripts:latest`, clone the repository into the `/var/` directory. Then, run the following commands to pull and tag the image:
+
+```bash
+docker pull  33zahra/gdb-scripts:latest
+docker tag 33zahra/gdb-scripts:latest gdb-scripts:latest
+```
 
 ### Step 2: Run Docker Container for Coredump Debugging
 
@@ -181,6 +185,59 @@ For **remote debugging**, run
 
 ```bash
 docker run -v /path/to/main-rootfs:/work -v /path/to/src:/src -it gdb-scripts gdb_remote -i 192.168.183.132 -u gdb_user -pid 3789 -w ../workspace -p 3434 -a powerpc:common -s /path/to/src -ui vscode
+```
+## GDB Custom Commands
+
+## Command Overview
+
+### 1. `process`
+Displays general information about the process, including the executable path and PID. (Not available in core dump debugging.)
+
+### 2. `arena`
+Extracts all heap arenas in the process memory.
+
+### 3. `heap`
+Displays usage details of all heap memory in the program space.
+
+### 4. `bins`
+Walks through all bins and checks for corruption.
+
+### 5. `search_pattern <pattern>`
+Searches for a specific memory pattern within mapped memory ranges. Example usage:
+```gdb
+search_pattern 0xb5e00050
+```
+this command would search all the open files memory ranges for pattern. if you want to explicitly
+define ranges, use below format: 
+```gdb
+search_pattern 0x1006c000 0x1006c0f0 0xb5e00050
+```
+this will search for the pattern in the specified range. 
+
+### 6. `deadlock`
+Detects potential deadlocks among threads in the current process.
+
+### 7. `exit_gdb`
+Custom command to exit GDB.
+
+### 8. `add_child_dirs <parent_path>`
+Adds all child directories inside a given parent directory to GDB's source path. Example usage:
+```gdb
+add_child_dirs /home/victim/src
+```
+
+## Usage Order
+To ensure proper functionality, use the commands in the following order:
+1. `process`
+2. `arena`
+3. `heap`
+4. `bins`
+5. (Optional) `search_pattern` if needed.
+
+## Installation
+Place the command scripts in your GDB initialization directory and source them within GDB:
+```gdb
+source path/to/commands.py
 ```
 
 ### Important Notes:
