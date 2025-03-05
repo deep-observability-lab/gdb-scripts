@@ -44,11 +44,8 @@ class Arena(gdb.Command):
             arena_info = self.get_arena_info(current_arena)
             if arena_info is None:
                 break
-
             start_address, end_address, arena_size, max_system_mem, top_chunk = arena_info
-
             state_manager.arenas.append("0x{:x}".format(start_address))
-
             label = "Arena {} at 0x{:x}".format(index, start_address)
             data = "Start = 0x{:x}, End = 0x{:x}, Size = {}".format(
                 start_address, end_address, arena_size)

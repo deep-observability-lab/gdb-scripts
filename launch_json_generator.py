@@ -1,6 +1,7 @@
 import os
 import json
 import subprocess
+import config as cnf
 
 
 def generate_debug_config(mode, output_path, **kwargs):
@@ -126,12 +127,26 @@ def generate_debug_config(mode, output_path, **kwargs):
             "configurations": [config]
         }
         # Write to file
+
         with open(output_path, "w") as f:
             json.dump(launch_json, f, indent=4)
-        print(f"launch.json written to {output_path}")
-        print("open vscode in the path <workspace>/\n .vscode/launch.json is generated.")
+        
+        tmp_output = output_path
+        if cnf.ENV != '' : 
+            tmp_output = cnf.ENV + '/.vscode/launch.json'
+        print("\033[33mlaunch.json written to {} \033[0m".format( tmp_output))
+        vscode_path = tmp_output.split( "/.vscode")[0]
+        print("\033[33mopen vscode in the path {}.vscode/launch.json is generated.\033[0m".format( vscode_path))
+
         if kwargs['live']:
             print("gdbserver is listening on remote...")
+
+        # with open(output_path, "w") as f:
+        #     json.dump(launch_json, f, indent=4)
+        # print(f"launch.json written to {output_path}")
+        # print("open vscode in the path <workspace>/\n .vscode/launch.json is generated.")
+        # if kwargs['live']:
+        #     print("gdbserver is listening on remote...")
 
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
