@@ -54,7 +54,7 @@ This tool simplifies remote debugging by automating essential steps required to 
 To initiate remote debugging, run:
 ```bash
 sudo ./gdb_script.sh gdb_remote [-h] [-i IP] [-u USERNAME] [-pid PROCESS_ID] [-a ARCHITECTURE]
-                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s ] [--docker] [--TEAM]
+                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s ] [--docker]
 ---
 
 ## Example Command
@@ -112,7 +112,7 @@ sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../work
 To perform debugging with a coredump, you can run the following command:
 
 ```bash
-sudo ./gdb_scripts.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -p program.debug -s /source/code/path/ -ui vscode
+sudo ./gdb_script.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -p program.debug -s /source/code/path/ -ui vscode
 
 ```
 
