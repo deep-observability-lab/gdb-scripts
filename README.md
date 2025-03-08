@@ -20,7 +20,7 @@ This tool simplifies remote debugging by automating essential steps required to 
 - [Workflow](#workflow)
 - [Coredump Debugging](#coredump-debugging)
 - [User Interface (`-ui` flag)](#user-interface-ui-flag)
-- [Running in Dockerized Mode](#running-in-dockerized-mode)
+- [Running in Dockerized Mode Wtih out using Wrapper Script](#running-in-dockerized-mode-wtih-out-using-wrapper-script)
 - [GDB Custom Commands](#gdb-custom-commands)
 ---
 
@@ -41,7 +41,7 @@ This tool simplifies remote debugging by automating essential steps required to 
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/deep-observability-lab/gdb-scripts.git
+   git clone https://github.com/deep-observability-lab/gdb-script.git
    cd gdb-scripts
    ```
 2. Install required Python packages:
@@ -53,15 +53,13 @@ This tool simplifies remote debugging by automating essential steps required to 
 ## Usage
 To initiate remote debugging, run:
 ```bash
-sudo python3 gdb_remote.py [-h] [-i IP] [-u USERNAME] [-pid PROCESS_ID] [-a ARCHITECTURE]
-                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s ]
-```
-
+sudo ./gdb_script.sh gdb_remote [-h] [-i IP] [-u USERNAME] [-pid PROCESS_ID] [-a ARCHITECTURE]
+                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s ] [--docker] [--TEAM]
 ---
 
 ## Example Command
 ```bash
-sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace -p 3434 -a powerpc:common -ui vscode
+sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../workspace -p snmp -a powerpc:common -ui vscode
 ```
 
 ---
@@ -76,6 +74,7 @@ sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace
 - **-p** / **--port**: Port to set the `DEFAULT_PORT`. If not specified, GDB uses port 1234 (e.g., `-p 1234`).
 - **-ui** / **--user_interface**: Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.
 - **-s** / **--source**: Directory where you should put all the source codes (separated from binaries and libs).
+- **--docker** / **--docker**: Runs the command inside a Docker container. If specified, the script will execute with Docker-specific configurations.
 
 ---
 
@@ -113,7 +112,8 @@ sudo python3 gdb_remote.py -i 192.168.183.132 -u zahra -pid 3789 -w ../workspace
 To perform debugging with a coredump, you can run the following command:
 
 ```bash
-./entrypoint.sh gdb_coredump -w $workspace -a powerpc:common -c core_dump -p program.debug -s <source_code_path> -ui vscode
+sudo ./gdb_scripts.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -p program.debug -s /source/code/path/ -ui vscode
+
 ```
 
 ### Argument Descriptions for Coredump Debugging:
@@ -123,6 +123,7 @@ To perform debugging with a coredump, you can run the following command:
 - **-p** / **--port**: Port to set the `DEFAULT_PORT` for the debugger (e.g., `-p 1234`).
 - **-s** / **--source**: Directory where the source codes are located (preferably in the same directory as the binaries and coredump).
 - **-ui** / **--user_interface**: Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.
+- **--docker** / **--docker**: Runs the command inside a Docker container. If specified, the script will execute with Docker-specific configurations.
 
 ### Notes:
 - The `launch.json` for debugging will be automatically generated and placed inside the `.vscode` folder within your workspace.
@@ -144,7 +145,7 @@ Both options are supported for both **remote debugging** and **coredump debuggin
 
 ---
 
-## Running in Dockerized Mode
+## Running in Dockerized Mode Wtih out using Wrapper Script
 
 You can run both **remote debugging** and **coredump debugging** in a Dockerized environment. To do so, follow these steps:
 
@@ -168,7 +169,7 @@ docker tag 33zahra/gdb-scripts:latest gdb-scripts:latest
 For **coredump debugging**, run the following Docker command:
 
 ```bash
-docker run -v /path/to/main-rootfs:/work -v /path/to/src:/src -it gdb-scripts gdb_coredump -c core_dump -p myprogram.debug -w /path/to/main-rootfs -s /path/to/src -ui vscode
+sudo ./gdb_script.sh gdb_coredump -c core_dump -p myprogram.debug -w /path/to/main-rootfs -s /path/to/src -ui vscode --docker
 ```
 
 ### Important Notes:
@@ -184,7 +185,7 @@ For **remote debugging**, run
  the following Docker command:
 
 ```bash
-docker run -v /path/to/main-rootfs:/work -v /path/to/src:/src -it gdb-scripts gdb_remote -i 192.168.183.132 -u gdb_user -pid 3789 -w ../workspace -p 3434 -a powerpc:common -s /path/to/src -ui vscode
+sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u gdb_user -pid 3789 -w ../workspace -p 3434 -a powerpc:common -s /path/to/src -ui vscode --docker -ui vscode
 ```
 ## GDB Custom Commands
 
