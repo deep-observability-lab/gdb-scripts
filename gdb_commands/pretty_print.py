@@ -45,6 +45,10 @@ class PrettyPrinter:
         print(PrettyPrinter.RED_COLOR, error, PrettyPrinter.RESET_COLOR)
 
     @staticmethod
+    def print_warning( warn ) : 
+        print(PrettyPrinter.YELLOW_COLOR, warn, PrettyPrinter.RESET_COLOR)
+
+    @staticmethod
     def print_half_header(line, color="\033[38;5;214m"):
         print(color, line, PrettyPrinter.RESET_COLOR)
 

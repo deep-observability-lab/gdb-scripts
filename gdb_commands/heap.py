@@ -1,7 +1,6 @@
 import gdb
 from gdb_commands.global_state import state_manager
 import re
-import time
 from pretty_print import PrettyPrinter
 
 label_color = PrettyPrinter.LABEL_COLOR
@@ -52,6 +51,7 @@ class Heap(gdb.Command):
             print(f"An unexpected error occurred: {e}")
             return None
 
+
     def count_memory_usage(self, heap_start, heap_end):
         allocated = 0
         total = heap_end - heap_start
@@ -95,6 +95,7 @@ class Heap(gdb.Command):
             allocated,
             width=100)
 
+
     def extract_heap_info(self):
         heap_sections = []
         gdb_command = "info proc mappings"
@@ -112,18 +113,19 @@ class Heap(gdb.Command):
                 heap.start = str(match.group(1)).strip()
                 heap.end = str(match.group(2)).strip()
                 heap_sections.append(heap)
-
         return heap_sections
+
 
     def extract_heaps(self):
         self.extract_main_heap()
         regions = self.extract_heap_info()
+        
         if len(regions) != 0:
             for r in regions:
                 memory = gdb.parse_and_eval(
                     "*(struct _heap_info*) {}".format(r.start))
                 ss = str(memory['ar_ptr']).strip()
-
+                
                 if ss in state_manager.arenas:
                     r.ar_add = str(memory['ar_ptr'])
 
@@ -142,11 +144,12 @@ class Heap(gdb.Command):
                         state_manager.arena2heaps[r.ar_add] = []
                     state_manager.arena2heaps[r.ar_add].append(
                         len(state_manager.heaps))
-
+                    
                     state_manager.heaps.append(r)
             for ar in state_manager.arenas:
                 if ar not in state_manager.arena2heaps:
                     state_manager.arena2heaps[ar] = []
+
 
     def test_offset_for_main_heap(self, heap_start):
         num_words = 4
@@ -167,48 +170,117 @@ class Heap(gdb.Command):
         return 0
 
     def extract_main_heap(self):
+        # Initialize the main heap region object
         main_heap = MemRegion()
+        # Extract the base address of the heap (sbrk_base)
         main_heap.start = gdb.execute(
             'p mp_.sbrk_base',
             to_string=True).strip().split(' = ')[1].strip('"')
+        
+        # Check if sbrk_base is zero (corruption or missing initialization)
+        if main_heap.start == '0x0':
+            PrettyPrinter.print_warning("Warning: sbrk_base is 0. Heap might not be initialized or the process is using mmap.")
+            return
+
+        # Extract the top chunk address from main_arena
         top_chunk = gdb.execute(
             'p main_arena.top',
             to_string=True)
+        
+        # Check if main_arena.top could not be retrieved
+        if "top" not in top_chunk:
+            PrettyPrinter.print_warning("Warning: Unable to retrieve main_arena.top. This could indicate heap corruption.")
+            return
+        
+        # Extract the hex address of the top chunk
         pattern = r"0x[0-9a-fA-F]+"
         match = re.search(pattern, top_chunk)
+        
+        if not match:
+            PrettyPrinter.print_warning("Warning: Unable to find valid address for top chunk. Potential memory corruption.")
+            return
+        
         hex_address = match.group()
         num_words = 1
+        
+        # Read memory at the top chunk address
         value = self.read_memory(int(hex_address, 16), num_words)
+        
+        # Ensure the value read from memory is sane
+        if value == 0:
+            PrettyPrinter.print_warning(f"Warning: Invalid memory value read from top chunk at address {hex_address}. Possible heap corruption.")
+            return
+        
+        # Calculate the size of the top chunk
         sz = value & ~0x7
         main_heap.end = str(hex(int(hex_address, 16) + sz))
+
+        # Calculate the total size of the heap region
         total = int(main_heap.end, 16) - int(main_heap.start, 16)
+
+        if total <= 0:
+            PrettyPrinter.print_warning("Warning: Invalid heap size (total <= 0). This could indicate heap corruption.")
+            return
+
+        # Set heap size and arena address
         main_heap.size = total
         main_heap.ar_add = state_manager.arenas[0]
         main_heap.is_main = True
+
+        # Check for heap offset (potential issue with invalid memory address)
         shift = self.test_offset_for_main_heap(int(main_heap.start, 16))
-        
+        if shift < 0:
+            PrettyPrinter.print_warning("Warning: Invalid offset calculated for main heap. Potential corruption detected.")
+            return
+
         main_heap.offset = str(hex(int(main_heap.start, 16) + shift))
+
+        # Store the main heap region
         state_manager.arena2heaps[main_heap.ar_add] = [0]
         state_manager.heaps.append(main_heap)
 
+
+
+    # def extract_main_heap(self):
+    #     main_heap = MemRegion()
+    #     main_heap.start = gdb.execute(
+    #         'p mp_.sbrk_base',
+    #         to_string=True).strip().split(' = ')[1].strip('"')
+    #     top_chunk = gdb.execute(
+    #         'p main_arena.top',
+    #         to_string=True)
+    #     pattern = r"0x[0-9a-fA-F]+"
+    #     match = re.search(pattern, top_chunk)
+    #     hex_address = match.group()
+    #     num_words = 1
+    #     value = self.read_memory(int(hex_address, 16), num_words)
+    #     sz = value & ~0x7
+    #     main_heap.end = str(hex(int(hex_address, 16) + sz))
+    #     total = int(main_heap.end, 16) - int(main_heap.start, 16)
+    #     main_heap.size = total
+    #     main_heap.ar_add = state_manager.arenas[0]
+    #     main_heap.is_main = True
+    #     shift = self.test_offset_for_main_heap(int(main_heap.start, 16))
+        
+    #     main_heap.offset = str(hex(int(main_heap.start, 16) + shift))
+    #     state_manager.arena2heaps[main_heap.ar_add] = [0]
+    #     state_manager.heaps.append(main_heap)
+
     def invoke(self, arg, from_tty):
         table_width = 100
+        
         state_manager.heaps = []
         state_manager.arena2heaps = {}
         self.extract_heaps()
         cnt = 0
         PrettyPrinter.print_header(
             "analysis thread's heaps", width=table_width)
-
         for ar in state_manager.arenas:
             if len(state_manager.arena2heaps[ar]) > 0:
                 for heap_indx in state_manager.arena2heaps[ar]:
                     tmp_heap = state_manager.heaps[heap_indx]
-
                     end = int(tmp_heap.end, 16)
-
                     start = int(tmp_heap.offset, 16)
-
                     if (int(tmp_heap.ar_add, 16) == int(tmp_heap.offset, 16)):
                         start += state_manager.ARENA_SIZE
                     PrettyPrinter.print_devider(100)
@@ -237,9 +309,7 @@ class Heap(gdb.Command):
                             reset_color),
                         tmp_heap.size,
                         width=table_width)
-
                     cnt += 1
-
                     self.count_memory_usage(start, end)
 
         PrettyPrinter.print_footer(100)

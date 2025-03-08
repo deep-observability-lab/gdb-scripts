@@ -48,7 +48,7 @@ def check_port(ssh_conn, password, username):
 
 def extract_shared_libraries_from_core(core_dump_path):
     """Extracts shared libraries from a core dump using readelf and filters paths ending in .so."""
-    try:
+    try:           
         # Run readelf to get all information, then filter for .so files
         readelf_output = subprocess.run(
             ["readelf", "-a", core_dump_path],
@@ -67,8 +67,16 @@ def extract_shared_libraries_from_core(core_dump_path):
         return so_paths
 
     except subprocess.CalledProcessError as e:
-        print("Error running readelf: {}".format(e))
+        # print("Error running readelf: {}".format(e))
         return {}
+def find_directories_with_lib(workspace):
+    """Search for all directories containing 'lib' in their names within the workspace path."""
+    matching_directories = []
+    for root, dirs, _ in os.walk(workspace):
+        for dir_name in dirs:
+            if 'lib' in dir_name:  
+                matching_directories.append(os.path.join(root, dir_name))
+    return matching_directories
 
 
 def find_library_in_workspace(workspace, library_name):
@@ -99,7 +107,13 @@ def check_libraries_in_path(core_dump_path, search_path):
         else:
             not_found.add(lib)
 
-    result = False
+    tmp_lib = find_directories_with_lib(cnf.WORKSPACE)
+    
+    for l in tmp_lib : 
+        found.add( l )
+
+
+    result = True
     if len(not_found) > 0:
         print("Following libraries were not found in workspace.")
         for lib in not_found:
@@ -116,6 +130,7 @@ def check_libraries_in_path(core_dump_path, search_path):
             result = True
         elif cont == "2":
             print("Using libraries in the default path in the local system.")
+            cont=False 
         else:
             print("Invalid input. Exiting the program.")
             exit(1)  # Exit with error code
@@ -138,6 +153,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid, binary_path,
         target_path = os.path.join(workspace, os.path.basename(core_file))
         #shutil.copy(core_file, target_path)
         if len(found_libs) > 0:
+           
             solib_path = ':'.join(found_libs)
         # src_abs = os.path.abspath(core_file)
         # dst_abs = os.path.abspath(target_path)
@@ -152,7 +168,7 @@ def create_gdbcommand(arch, user, pwd, ip, port, pid, binary_path,
         #     except Exception as e:
         #         print(f"An error occurred: {e}")
         if not cont:
-            solib_path = ''
+            # solib_path = ''
             sysroot = '/'
 
     file_name = "gdb_commands/"
@@ -171,7 +187,7 @@ file {}
 set pagination off
 set auto-solib-add on
 # set sysroot {}
-#set sysroot .
+set sysroot .
 core-file $core-file
 set solib-search-path {}
 info sharedlibrary
@@ -222,6 +238,7 @@ attach {}
         gdb_commands += "add_child_dirs {}\n".format(cnf.SRC_ENV)
     if cnf.ENV != '':  # in docker containe
         gdb_commands = gdb_commands.replace(cnf.WORKSPACE, cnf.ENV)
+        
         host_path = os.environ.get("HOST_PATH")
         if host_path:
             gdb_commands = gdb_commands.replace('/app', host_path)
@@ -236,7 +253,7 @@ def run_gdb_local(app, ip, port, pid, user, pwd, source=None,
         arch = "auto"
 
     binary_path = os.path.join(cnf.WORKSPACE, app)
-
+    
     gdb_commands = create_gdbcommand(
         arch,
         user,
