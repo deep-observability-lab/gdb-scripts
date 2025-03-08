@@ -105,8 +105,8 @@ fi
 
 if [[ "$docker_mode" == "yes" ]]; then
     echo "Running in Docker mode..."
-    # docker pull 33zahra/gdb-scripts:latest
-    # docker tag 33zahra/gdb-scripts:latest gdb-scripts:latest
+    docker pull 33zahra/gdb-scripts:latest
+    docker tag 33zahra/gdb-scripts:latest gdb-scripts:latest
     
     if [[ "$gdb_mode" == "gdb_coredump" ]]; then
         echo 

@@ -67,7 +67,7 @@ def extract_shared_libraries_from_core(core_dump_path):
         return so_paths
 
     except subprocess.CalledProcessError as e:
-        print("Error running readelf: {}".format(e))
+        # print("Error running readelf: {}".format(e))
         return {}
 def find_directories_with_lib(workspace):
     """Search for all directories containing 'lib' in their names within the workspace path."""
@@ -113,7 +113,7 @@ def check_libraries_in_path(core_dump_path, search_path):
         found.add( l )
 
 
-    result = False
+    result = True
     if len(not_found) > 0:
         print("Following libraries were not found in workspace.")
         for lib in not_found:
@@ -130,6 +130,7 @@ def check_libraries_in_path(core_dump_path, search_path):
             result = True
         elif cont == "2":
             print("Using libraries in the default path in the local system.")
+            cont=False 
         else:
             print("Invalid input. Exiting the program.")
             exit(1)  # Exit with error code
@@ -186,7 +187,7 @@ file {}
 set pagination off
 set auto-solib-add on
 # set sysroot {}
-#set sysroot .
+set sysroot .
 core-file $core-file
 set solib-search-path {}
 info sharedlibrary
