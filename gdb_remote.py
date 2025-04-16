@@ -3,6 +3,7 @@ import argparse
 from setup_local import setup_local
 import config as cnf
 import os
+import sys
 # ANSI escape codes for colored text
 YELLOW = '\033[93m'
 RESET = '\033[0m'
@@ -103,6 +104,7 @@ def main(argv):
         '-p',
         '--port',
         type=int,
+        required=True,
         help='Port to set the DEFAULT_PORT. If not specified, gdb use port: 1234.')
     parser.add_argument(
         '-ui',
@@ -153,6 +155,7 @@ def main(argv):
 
     if password is None:
         password = getpass.getpass(prompt="Enter password for remtoe target :")
+        
 
     if args.port is not None:
         gdb_port = args.port
@@ -170,8 +173,7 @@ def main(argv):
     port = run_gdbserver(user=args.username, pwd=password, ip=args.ip)
 
     p_name = get_program_name(
-        user=args.username, ip=args.ip, pwd=password, pid=args.process_id)
-
+        user=args.username, ip=args.ip, pwd=password, pid=args.process_id)    
     run_gdb_local(
         p_name,
         port=port,

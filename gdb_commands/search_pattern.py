@@ -1,7 +1,7 @@
 import gdb
 import re
 from gdb_commands.global_state import state_manager
-from pretty_print import PrettyPrinter
+from gdb_commands.pretty_print import PrettyPrinter
 
 label_color = PrettyPrinter.LABEL_COLOR
 reset_color = PrettyPrinter.RESET_COLOR

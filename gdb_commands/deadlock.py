@@ -100,5 +100,5 @@ class DeadlockDetector(gdb.Command):
         else:
             PrettyPrinter.print_header(
                 "No deadlocks detected.",
-                width=60,
-                color=PrettyPrinter.LABEL_COLOR)
+                width=60)
+                # color=PrettyPrinter.LABEL_COLOR

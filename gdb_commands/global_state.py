@@ -8,7 +8,9 @@ class GlobalState:
         self.arenas = []
         self.heaps = []
         self.arena2heaps = {}
-
+        self.used_mem = 0 
+        self.freed_mem =0
+        self.total_heap=0
         # Initialize word size
         try:
             self.word_size = gdb.lookup_type('void').pointer().sizeof
@@ -51,7 +53,8 @@ class GlobalState:
 
     def is_attached_process(self):
         try:
-            result = gdb.execute("p getpid()", to_string=True)
+            # Use `info target` to gather connection details
+            target_info = gdb.execute('info target', to_string=True)
             return True
         except gdb.error as e:
             return False

@@ -6,26 +6,30 @@ from gdb_commands.global_state import state_manager
 
 
 class Process(gdb.Command):
-
     def __init__(self):
         super(Process, self).__init__("process", gdb.COMMAND_USER)
 
     def count_mmaped_blks(self):
         """Count the number of mmaped blocks and their total size using mallinfo()."""
         try:
-            if state_manager.is_process:
-                mmap_info = gdb.parse_and_eval('mallinfo()')
+            if not state_manager.is_process:
+                PrettyPrinter.print_error("Not supported in coredump debugging")
+                return None, None
+            try:
+                # Explicitly cast mallinfo call to its return type
+                gdb.execute('set $mi = (struct mallinfo) mallinfo()', to_string=True)
+                mmap_info = gdb.parse_and_eval('$mi')
                 num_regions = int(mmap_info['hblks'])
                 total_size = int(mmap_info['hblkhd'])
                 return num_regions, total_size
-            else:
-                PrettyPrinter.print_error(
-                    "not supported in coredump debugging")
-                return None, None
+            except gdb.error as e:
+                PrettyPrinter.print_error(f"mallinfo() not accessible: {e}\n mmap_info are not accessable.")
+                return 0, 0            
 
-        except gdb.error as e:
-            print("Error fetching mmap information: {}".format(e))
-            return 0
+        except Exception as e:
+            PrettyPrinter.print_error(f"Unexpected error fetching mmap information: {e}")
+            return 0, 0
+
 
     def get_absolute_executable_path(self, pid):
         """Get the absolute path of the executable for the given process ID."""
@@ -101,6 +105,3 @@ class Process(gdb.Command):
         except gdb.error as e:
             print("Error in process command: {}".format(e))
 
-
-# Register the command with GDB
-Process()

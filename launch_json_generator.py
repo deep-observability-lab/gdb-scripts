@@ -127,10 +127,9 @@ def generate_debug_config(mode, output_path, **kwargs):
             "configurations": [config]
         }
         # Write to file
-
         with open(output_path, "w") as f:
             json.dump(launch_json, f, indent=4)
-        
+
         tmp_output = output_path
         if cnf.ENV != '' : 
             tmp_output = cnf.ENV + '/.vscode/launch.json'
@@ -140,13 +139,6 @@ def generate_debug_config(mode, output_path, **kwargs):
 
         if kwargs['live']:
             print("gdbserver is listening on remote...")
-
-        # with open(output_path, "w") as f:
-        #     json.dump(launch_json, f, indent=4)
-        # print(f"launch.json written to {output_path}")
-        # print("open vscode in the path <workspace>/\n .vscode/launch.json is generated.")
-        # if kwargs['live']:
-        #     print("gdbserver is listening on remote...")
 
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
