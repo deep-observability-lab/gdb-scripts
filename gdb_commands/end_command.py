@@ -22,21 +22,19 @@ class ExitCommand(gdb.Command):
 
         try:
             # Use `info target` to gather connection details
-            target_info = gdb.execute('info target', to_string=True)
-            if "Remote serial target" in target_info:
-                self.ip = gdb.execute(
-                    'show environment IP_ADDRESS',
-                    to_string=True).strip().split(' = ')[1]
-                self.username = gdb.execute(
-                    'show environment USERNAME',
-                    to_string=True).strip().split(' = ')[1]
-                self.password = gdb.execute(
-                    'show environment PASSWORD',
-                    to_string=True).strip().split(' = ')[1]
-            else:
-                self.ip = None
 
-        except gdb.error as e:
+            self.ip = gdb.execute(
+                'show environment IP_ADDRESS',
+                to_string=True).strip().split(' = ')[1]
+            self.username = gdb.execute(
+                'show environment USERNAME',
+                to_string=True).strip().split(' = ')[1]
+            self.password = gdb.execute(
+                'show environment PASSWORD',
+                to_string=True).strip().split(' = ')[1]
+
+
+        except (gdb.error, IndexError, KeyError, ValueError) as e:
             print("Error fetching details from target: {}".format(e))
             self.ip = None
 

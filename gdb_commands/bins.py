@@ -21,41 +21,65 @@ class Bins(gdb.Command):
         return bin_head
 
     def walk_doubled_link_bin_at(self, index, name, bin_head):
-        if bin_head == 0:
-            return
-        head = str(bin_head).split()[0]
-        cur = head
-        bin_head = cur
-        pre = cur
-        num_chunks = 0
-        while True:
-            mchunkptr = gdb.parse_and_eval("*(mchunkptr) {}".format(cur))
-            fd = str(mchunkptr['fd']).split()[0]
-            bk = str(mchunkptr['bk']).split()[0]
-            if num_chunks == 0:
-                pre = bk
-
-            if fd == bin_head:
-                break
-            if bk != pre:
-                PrettyPrinter.print_error(
-                    "corruption at {} bin with index: {} with head ptr: {} at chunk {}\nprevious chunck is {}".format(
-                        name, index, head, cur, pre))
+        try:
+            if bin_head == 0:
                 return
-            num_chunks += 1
-            pre = cur
-            cur = fd
 
-        if num_chunks != 0:
-            PrettyPrinter.print_row(
-                "{}{}[{}] at {} {}".format(
-                    label_color,
-                    name,
-                    index,
-                    str(bin_head).split()[0],
-                    reset_color),
-                "{} chunks".format(num_chunks),
-                width=100)
+            head = str(bin_head).split()[0]
+            cur = head
+            bin_head = cur
+            pre = cur
+            num_chunks = 0
+            size = 0
+
+            while True:
+                try:
+                    mchunkptr = gdb.parse_and_eval("*(mchunkptr) {}".format(cur))
+                    fd = str(mchunkptr['fd']).split()[0]
+                    bk = str(mchunkptr['bk']).split()[0]
+                    size += int(str(mchunkptr['mchunk_size']).split()[0], 16)
+                except gdb.error as e:
+                    PrettyPrinter.print_error("Error evaluating mchunkptr at {}: {}".format(cur, e))
+                    return
+                except KeyError as e:
+                    PrettyPrinter.print_error("Missing key in mchunkptr: {}".format(e))
+                    return
+                except Exception as e:
+                    PrettyPrinter.print_error("Unexpected error processing chunk at {}: {}".format(cur, e))
+                    return
+
+                if num_chunks == 0:
+                    pre = bk
+
+                if fd == bin_head:
+                    break
+                if bk != pre:
+                    PrettyPrinter.print_error(
+                        "Corruption detected at {} bin with index: {} with head ptr: {} at chunk {}\nPrevious chunk is {}".format(
+                            name, index, head, cur, pre))
+                    return
+
+                num_chunks += 1
+                pre = cur
+                cur = fd
+
+            if num_chunks != 0:
+                PrettyPrinter.print_row(
+                    "{}{}[{}] at {} {}".format(
+                        label_color,
+                        name,
+                        index,
+                        str(bin_head).split()[0],
+                        reset_color),
+                    "{} chunks with total size: {}".format(num_chunks, size),
+                    width=100)
+                state_manager.freed_mem += size
+
+        except gdb.error as e:
+            PrettyPrinter.print_error("GDB error while walking bin: {}".format(e))
+        except Exception as e:
+            PrettyPrinter.print_error("Unexpected error while walking bin: {}".format(e))
+
 
     def walk_unsorted_bin(self, ar_add):
         PrettyPrinter.print_devider(100)
@@ -66,8 +90,9 @@ class Bins(gdb.Command):
     def walk_fast_bin(self, ar_add):
         PrettyPrinter.print_devider(100)
         PrettyPrinter.print_half_header("fast bins")
-
+        size =0
         for i in range(10):
+            size =0
             fbin_head = gdb.parse_and_eval(
                 "( *(struct malloc_state*) {}).fastbinsY[{}]".format(ar_add, i))
             if fbin_head == 0:
@@ -85,6 +110,7 @@ class Bins(gdb.Command):
                         "*(mchunkptr) {}".format(cur))
 
                     fd = str(mchunkptr['fd']).split()[0]
+                    size += int(str(mchunkptr['mchunk_size']).split()[0], 16)
                     num_chunks += 1
                     cur = fd
 
@@ -102,6 +128,7 @@ class Bins(gdb.Command):
                         reset_color),
                     "{} chunks".format(num_chunks),
                     width=100)
+                state_manager.freed_mem += size
 
     def walk_small_bins(self, ar_add):
         PrettyPrinter.print_devider(100)

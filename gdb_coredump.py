@@ -88,7 +88,7 @@ def main(argv):
         type=str,
         required=True,
         help='name of coredump file which should be located on workspace path.')
-    parser.add_argument('-p', '--program', type=str, required=True,
+    parser.add_argument('-b', '--binary', type=str, required=True,
                         help='name of the binary program you wish to debug.')
     parser.add_argument(
         '-w',
@@ -122,6 +122,7 @@ def main(argv):
 
     ui_mood = 'vscode' if args.user_interface == 'vscode' else 'gdb'
     if os.path.exists('/.dockerenv') == False:
+        
         if args.workspace is not None:
             workspace = args.workspace
         else:
@@ -132,14 +133,12 @@ def main(argv):
     else:
         if args.user_interface == 'vscode':
             environment = args.workspace
-            
             #workspace = args.workspace
             workspace = '/work'
         else:
             environment = ''
-            
             workspace = '/work'
-            if src_env != ''and src_env is not None:
+            if src_env != '' and src_env is not None:
                 src_env = '/src'
 
     cnf.init(
@@ -154,7 +153,7 @@ def main(argv):
         exit()
 
     run_gdb_local(
-        args.program,
+        args.binary,
         port=None,
         pid=None,
         user=None,

@@ -1,5 +1,6 @@
 import paramiko
-
+import sys
+import time
 
 class SSHConnection:
     def __init__(self, ip, username, password=None, private_key=None, port=22):
@@ -12,27 +13,51 @@ class SSHConnection:
 
     def connect(self):
         """Establish SSH connection."""
-        try:
-            self.client = paramiko.SSHClient()
-            self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            if self.private_key:
-                key = paramiko.RSAKey.from_private_key_file(self.private_key)
-                self.client.connect(
-                    self.ip,
-                    username=self.username,
-                    pkey=key,
-                    port=self.port)
-            else:
-                # If using password
-                self.client.connect(
-                    self.ip,
-                    username=self.username,
-                    password=self.password,
-                    port=self.port)
-            print("Connected to {}".format(self.ip))
-        except Exception as e:
-            print("Failed to connect to {}: {}".format(self.ip, e))
-            raise e
+        retries = 3
+        for attempt in range(retries):
+            try:
+                self.client = paramiko.SSHClient()
+                self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+                if self.private_key:
+                    key = paramiko.RSAKey.from_private_key_file(self.private_key)
+                    self.client.connect(
+                        self.ip,
+                        username=self.username,
+                        pkey=key,
+                        port=self.port,
+                        timeout=60,
+                        banner_timeout=60,
+                        auth_timeout=60)
+                else:
+                    self.client.connect(
+                        self.ip,
+                        username=self.username,
+                        password=self.password,
+                        port=self.port,
+                        timeout=60,
+                        banner_timeout=60,
+                        auth_timeout=60)
+                print(f"Connected to {self.ip}")
+                return
+            except Exception as e:
+                print(f"[Attempt {attempt+1}] SSH connection failed: {e}")
+                if attempt < retries - 1:
+                    time.sleep(5)
+                else:
+                    sys.exit(1)
+            except paramiko.AuthenticationException:
+                print(f"Authentication failed for {self.username}@{self.ip}. Please check your credentials.")
+                sys.exit(1)  # Exit the script with error code 1
+
+            except paramiko.SSHException as e:
+                print(f"SSH error while connecting to {self.ip}: {e}")
+                sys.exit(1)
+
+            except Exception as e:
+                print(f"Failed to connect to {self.ip}: {e}")
+                sys.exit(1)
+
 
     def run_command(self, command):
         import time

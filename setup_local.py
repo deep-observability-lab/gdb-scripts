@@ -55,5 +55,6 @@ class setup_local:
             print("{} is already installed.\n".format(package_name))
 
     def setup_local(self):
-        self.install_gnome_terminal()
+        # self.install_gnome_terminal()
         # self.install_gdb_multiarch()
+        print("")

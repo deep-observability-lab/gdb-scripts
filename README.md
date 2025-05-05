@@ -54,12 +54,13 @@ This tool simplifies remote debugging by automating essential steps required to 
 To initiate remote debugging, run:
 ```bash
 sudo ./gdb_script.sh gdb_remote [-h] [-i IP] [-u USERNAME] [-pid PROCESS_ID] [-a ARCHITECTURE]
-                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s ] [--docker]
+                           [-ui USER_INTERFACE] [-w WORKSPACE] [-p PORT] [-s SOURCE_CODE] [--docker]
+
 ---
 
 ## Example Command
 ```bash
-sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../workspace -p snmp -a powerpc:common -ui vscode
+sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../workspace -p 1234 -a powerpc:common -ui vscode
 ```
 
 ---
@@ -75,7 +76,6 @@ sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../work
 - **-ui** / **--user_interface**: Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.
 - **-s** / **--source**: Directory where you should put all the source codes (separated from binaries and libs).
 - **--docker** / **--docker**: Runs the command inside a Docker container. If specified, the script will execute with Docker-specific configurations.
-
 ---
 
 ## Workflow
@@ -112,7 +112,7 @@ sudo ./gdb_scripts.sh gdb_remote -i 192.168.183.132 -u user -pid 3789 -w ../work
 To perform debugging with a coredump, you can run the following command:
 
 ```bash
-sudo ./gdb_script.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -p program.debug -s /source/code/path/ -ui vscode
+sudo ./gdb_scripts.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -b program.debug -s /source/code/path/ -ui vscode
 
 ```
 
@@ -120,7 +120,7 @@ sudo ./gdb_script.sh gdb_coredump -w /workspace -a powerpc:common -c core_dump -
 - **-w** / **--workspace**: Directory where you should put all the shared binaries, app binaries, and source codes. This should also contain the coredump file.
 - **-a** / **--architecture**: Architecture for the cross-compiled binary. Defaults to `auto` if not specified (e.g., `-a powerpc:common`).
 - **-c** / **--coredump**: Name of the coredump file located in the workspace.
-- **-p** / **--port**: Port to set the `DEFAULT_PORT` for the debugger (e.g., `-p 1234`).
+- **-b** / **--binary**: name of the binary program you wish to debug.
 - **-s** / **--source**: Directory where the source codes are located (preferably in the same directory as the binaries and coredump).
 - **-ui** / **--user_interface**: Specifies the user interface for debugging. Options: "vscode" for Visual Studio Code or "gdb" for GDB CLI.
 - **--docker** / **--docker**: Runs the command inside a Docker container. If specified, the script will execute with Docker-specific configurations.
@@ -153,7 +153,7 @@ You can run both **remote debugging** and **coredump debugging** in a Dockerized
 Build the Docker image by providing the path to your local repository for `gdb-scripts`:
 
 ```bash
-docker build --build-arg HOST_PATH=/path/to/repo/gdb-scripts -t gdb-scripts .
+docker build --build-arg HOST_PATH=/var/gdb-scripts -t gdb-scripts .
 ```
 
 This will create a Docker image with the necessary dependencies.
@@ -162,6 +162,7 @@ If you want to use the provided image in Dockerhub at `docker pull 33zahra/gdb-s
 ```bash
 docker pull  33zahra/gdb-scripts:latest
 docker tag 33zahra/gdb-scripts:latest gdb-scripts:latest
+docker run -v /path/to/workspace:/work -v /path/to/src:/src -it gdb-scripts gdb_coredump -c core_dump -b myprogram.debug -w /path/to/workspace -s /path/to/src
 ```
 
 ### Step 2: Run Docker Container for Coredump Debugging
@@ -226,6 +227,9 @@ Adds all child directories inside a given parent directory to GDB's source path.
 ```gdb
 add_child_dirs /home/victim/src
 ```
+### 9.`memsummary`
+Custom command to check summary of heap information.
+
 
 ## Usage Order
 To ensure proper functionality, use the commands in the following order:
@@ -233,7 +237,8 @@ To ensure proper functionality, use the commands in the following order:
 2. `arena`
 3. `heap`
 4. `bins`
-5. (Optional) `search_pattern` if needed.
+5. `memsummary`
+6. (Optional) `search_pattern` if needed.
 
 ## Installation
 Place the command scripts in your GDB initialization directory and source them within GDB:
