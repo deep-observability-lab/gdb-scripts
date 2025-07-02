@@ -16,15 +16,13 @@ class Process(gdb.Command):
                 PrettyPrinter.print_error("Not supported in coredump debugging")
                 return None, None
             try:
-                # Explicitly cast mallinfo call to its return type
-                gdb.execute('set $mi = (struct mallinfo) mallinfo()', to_string=True)
-                mmap_info = gdb.parse_and_eval('$mi')
-                num_regions = int(mmap_info['hblks'])
-                total_size = int(mmap_info['hblkhd'])
+                mp = gdb.parse_and_eval("mp_")
+                num_regions = int(mp['n_mmaps'])         # Equivalent to mallinfo().hblks
+                total_size = int(mp['mmapped_mem']) 
                 return num_regions, total_size
             except gdb.error as e:
-                PrettyPrinter.print_error(f"mallinfo() not accessible: {e}\n mmap_info are not accessable.")
-                return 0, 0            
+                PrettyPrinter.print_error(f"mp_ not accessible: {e}")
+                return 0, 0                      
 
         except Exception as e:
             PrettyPrinter.print_error(f"Unexpected error fetching mmap information: {e}")
@@ -41,11 +39,6 @@ class Process(gdb.Command):
             return exe_path
         else:
             PrettyPrinter.print_error("can not get the executable path.")
-
-        # if "process executable is" in absolute_path :
-        #     return absolute_path
-        # else :
-        #     return "<unknown>"
 
     def invoke(self, arg, from_tty):
         """GDB command to display process information."""
