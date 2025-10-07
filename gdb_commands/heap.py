@@ -107,7 +107,7 @@ class Heap(gdb.Command):
         gdb_command = "info proc mappings"
         regex = r'^\s*([0-9a-fx]+)\s+([0-9a-fx]+)\s+([0-9a-fx]+)\s+[0-9a-fx]+\s*$'
         
-        try:
+        try:    
             if not state_manager.is_process:
                 gdb_command = "maintenance info sections"
                 regex = r'^\s*\[\d+\]\s+([0-9a-fA-Fx]+)->([0-9a-fA-Fx]+).*?:.*?ALLOC\s+LOAD\s+HAS_CONTENTS$'
@@ -264,33 +264,6 @@ class Heap(gdb.Command):
             PrettyPrinter.print_error(f"Unexpected Error: {e}")
             return
 
-
-
-    # def extract_main_heap(self):
-    #     main_heap = MemRegion()
-    #     main_heap.start = gdb.execute(
-    #         'p mp_.sbrk_base',
-    #         to_string=True).strip().split(' = ')[1].strip('"')
-    #     top_chunk = gdb.execute(
-    #         'p main_arena.top',
-    #         to_string=True)
-    #     pattern = r"0x[0-9a-fA-F]+"
-    #     match = re.search(pattern, top_chunk)
-    #     hex_address = match.group()
-    #     num_words = 1
-    #     value = self.read_memory(int(hex_address, 16), num_words)
-    #     sz = value & ~0x7
-    #     main_heap.end = str(hex(int(hex_address, 16) + sz))
-    #     total = int(main_heap.end, 16) - int(main_heap.start, 16)
-    #     main_heap.size = total
-    #     main_heap.ar_add = state_manager.arenas[0]
-    #     main_heap.is_main = True
-    #     shift = self.test_offset_for_main_heap(int(main_heap.start, 16))
-        
-    #     main_heap.offset = str(hex(int(main_heap.start, 16) + shift))
-    #     state_manager.arena2heaps[main_heap.ar_add] = [0]
-    #     state_manager.heaps.append(main_heap)
-
     def invoke(self, arg, from_tty):
         table_width = 100
         
@@ -301,40 +274,41 @@ class Heap(gdb.Command):
         PrettyPrinter.print_header(
             "analysis thread's heaps", width=table_width)
         for ar in state_manager.arenas:
-            if len(state_manager.arena2heaps[ar]) > 0:
-                for heap_indx in state_manager.arena2heaps[ar]:
-                    tmp_heap = state_manager.heaps[heap_indx]
-                    end = int(tmp_heap.end, 16)
-                    start = int(tmp_heap.offset, 16)
-                    if (int(tmp_heap.ar_add, 16) == int(tmp_heap.offset, 16)):
-                        start += state_manager.ARENA_SIZE
-                    PrettyPrinter.print_devider(100)
-                    PrettyPrinter.print_half_header("heap #{}:".format(cnt))
-                    PrettyPrinter.print_row(
-                        "{}starts at : {}".format(
-                            label_color,
-                            reset_color),
-                        tmp_heap.start,
-                        width=table_width)
-                    PrettyPrinter.print_row(
-                        "{}ends at : {}".format(
-                            label_color,
-                            reset_color),
-                        tmp_heap.end,
-                        width=table_width)
-                    PrettyPrinter.print_row(
-                        "{}with arena : {}".format(
-                            label_color,
-                            reset_color),
-                        tmp_heap.ar_add,
-                        width=table_width)
-                    PrettyPrinter.print_row(
-                        "{}with size : {}".format(
-                            label_color,
-                            reset_color),
-                        tmp_heap.size,
-                        width=table_width)
-                    cnt += 1
-                    self.count_memory_usage(start, end)
+            if ar in state_manager.arena2heaps.keys():
+                if len(state_manager.arena2heaps[ar]) > 0:
+                    for heap_indx in state_manager.arena2heaps[ar]:
+                        tmp_heap = state_manager.heaps[heap_indx]
+                        end = int(tmp_heap.end, 16)
+                        start = int(tmp_heap.offset, 16)
+                        if (int(tmp_heap.ar_add, 16) == int(tmp_heap.offset, 16)):
+                            start += state_manager.ARENA_SIZE
+                        PrettyPrinter.print_devider(100)
+                        PrettyPrinter.print_half_header("heap #{}:".format(cnt))
+                        PrettyPrinter.print_row(
+                            "{}starts at : {}".format(
+                                label_color,
+                                reset_color),
+                            tmp_heap.start,
+                            width=table_width)
+                        PrettyPrinter.print_row(
+                            "{}ends at : {}".format(
+                                label_color,
+                                reset_color),
+                            tmp_heap.end,
+                            width=table_width)
+                        PrettyPrinter.print_row(
+                            "{}with arena : {}".format(
+                                label_color,
+                                reset_color),
+                            tmp_heap.ar_add,
+                            width=table_width)
+                        PrettyPrinter.print_row(
+                            "{}with size : {}".format(
+                                label_color,
+                                reset_color),
+                            tmp_heap.size,
+                            width=table_width)
+                        cnt += 1
+                        self.count_memory_usage(start, end)
 
         PrettyPrinter.print_footer(100)
